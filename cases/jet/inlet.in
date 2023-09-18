@@ -1,0 +1,23 @@
+  # inlet for jet-combusion Ver 2.0
+  # nx,  ny,  nz,    rd              rbuf
+    670  459  459   0.00072       0.0001
+  # u1,   T1,   P1,     ci1(k): O      O2        H2        H2O       OH        H        HO2  H2O2     N2        
+    900.  305.   101300         0.     0.       0.85        0.       0.        0.       0.    0.    0.15
+  # u2,   T2,   P2,     ci2(k): O      O2        H2        H2O       OH        H        HO2  H2O2     N2        
+    20.  1150.  101300          0.    0.21      0.        0.        0.        0.       0.    0.     0.79
+  # Xh         Th    (initial high-temperature zone, x>Xh)
+    0.0005        1800.
+  # epsl     rdist    omeg
+    0.0     0.00005     8.0  
+    open(80,file="inlet.in")
+    read(80,*)
+	read(80,*)
+	read(80,*)  nx, ny, nz, rd 
+	read(80,*)
+	read(80,*)  u1,T1,P1, (ci1(k),k=1,N_spec-1)
+	read(80,*) 
+	read(80,*)  u2,T2,P2, (ci2(k),k=1,N_spec-1)
+    close(80)
+ #------------------------------------------------------------
+   at initial time set T1=1800, Th=1800;
+   at other time, set T1=305., Th=1800

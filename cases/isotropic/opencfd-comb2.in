@@ -1,0 +1,34 @@
+ $control_opencfd
+ IF_Viscous=1
+ IF_RealGas=1
+ IF_Reaction=0
+ Flag_Viscosity=0
+ Flag_Conductivity=0
+ Flag_Diffusion=0
+ Amu0=1.789E-5
+ nx_global=128
+ ny_global=128
+ nz_global=128
+ npx0=2
+ npy0=2
+ npz0=2
+ N_SPEC=2
+ Iflag_Gridtype=10
+ Scheme_Invis="UD7L"
+ UD7L_Diss=0.5
+ Scheme_Vis="CD6"
+ BoundaryCondition="BC_NONE"
+ Istep_show=1
+ Istep_save=1000
+ dt=1.E-7
+ End_time=5.0
+ IF_Scheme_Character=0
+ Iperiodic_X=1
+ Iperiodic_Y=1
+ Iperiodic_Z=1
+ Periodic_ISpan= 6.2831853071795864E-3, 0.,0.
+ Periodic_JSpan= 0., 6.2831853071795864E-3, 0. 
+ Periodic_KSpan= 0., 0., 6.2831853071795864E-3
+ ANA_Number=1
+ ANA_Para(:,1)=102,    1 
+ $end

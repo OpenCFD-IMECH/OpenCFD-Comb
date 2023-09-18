@@ -1,0 +1,47 @@
+ $control_opencfd
+ N_SPEC=9
+ IF_Viscous=1
+ IF_RealGas=1
+ IF_Reaction=1
+ Flag_Viscosity=1   ! Surthland Eq.
+ Flag_Conductivity=1
+ Flag_Diffusion=1
+ nx_global=670
+ ny_global=459
+ nz_global=459
+ npx0=6
+ npy0=4
+ npz0=4
+ Iflag_Gridtype=10           ! 1D-plane type mesh
+ Scheme_Invis="OMP6"
+ Scheme_Vis="CD6"
+ Istep_show=1
+ Istep_save=10000
+ dt=1.E-8
+ End_time=0.1
+ IF_Scheme_Character=0
+ Chemical_sub_step=5
+ CHEM_TimeAdv=1
+ BoundaryCondition="BC_JET"
+ !   Iflag_inlet
+ BC_Para=1
+ ANA_Number=0
+ ANA_Para(:,1)=100,      10, 10000
+ !             Kana   Kstep_ana  Kstep_save
+ $end
+ 
+!--------------define of BC_Para -------------------
+!    BcData_inlet=nint(Para%BC_para(1))      ! inlet: (0 free-stream;  1 1d data;  2 2d data)
+!	 BcData_upper=nint(Para%Bc_para(2))      ! upper boundary: (0 free-stream, 1 1d data ,  2 2d data)
+!	 bc_upper_nonref=nint(Para%Bc_para(3))   ! upper boundary: 0 auto,  1 Non-Reflection,  2 Dirichlet 
+!	 bc_outlet=nint(Para%Bc_para(4))         ! outlet: 0 Non-Reflection,   1 1st order extrapolation,  2 2nd order extrapolation
+!    Tw=Para%Bc_para(5)                      ! wall temperature
+!	 Wall_Xinit=Para%Bc_para(6)              ! x location of the wall leading 
+!	 bc_dis_type=nint(Para%Bc_para(7))     ! wall disturbance type (0 none ;  1 multi-wave blow-and-suction, Ref: Rai MM, AIAA 95-0583)
+!	 bc_dis_A=Para%Bc_para(8)              ! Amplitude of wall disturbance     
+!	 bc_dis_Xbegin=Para%Bc_para(9)	       ! Initial location of wall disturbance
+!	 bc_dis_Xend=Para%Bc_para(10)          ! End location of wall disturbance
+!	 bc_dis_mt=nint(Para%Bc_para(11))     ! multi-frequency
+!	 bc_dis_mz=nint(Para%Bc_para(12))     ! multi-wavenumber
+!	 bc_dis_ZL=Para%Bc_para(13)           ! Spanwise Length
+!    bc_dis_freq=Para%Bc_para(14)         ! base frequancy of disturbance  

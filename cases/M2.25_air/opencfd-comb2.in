@@ -1,0 +1,109 @@
+ $control_opencfd
+ nx_global=2193
+ ny_global=61
+ nz_global=256
+ npx0=96
+ npy0=1
+ npz0=3
+ N_spec=1
+ Iflag_Gridtype=30           ! 1D-plane type mesh
+ Scheme_Invis="OMP6"
+ !Scheme_Invis="HYBRID"
+ !          Sensor seta1 seta2 patch
+ !Hybrid_Para=1,	0.01,	0.02,	0
+ Scheme_Vis="CD6"
+ Flag_Viscosity=0
+ Flag_Conductivity=0
+ Flag_Diffusion=0
+ Istep_show=10
+ Istep_save=10000
+ dt=1.7304e-8
+ If_Reaction=0
+ If_RealGas=1
+ Chemical_sub_step=1
+ CHEM_TimeAdv=3
+ End_time=1.7304d-3
+ IF_Scheme_Character=0
+ Iperiodic_Z=1
+ Periodic_KSpan= 0., 0., 4.445d-3
+!Boundarycondition="BC_NONE" 
+ BoundaryCondition="BC_BOUNDARYLAYER"
+ !   BcData_inlet  BcData_upper bc_upper_nonref  bc_outlet Tw  Wall_Xinit  bc_dis_type bc_dis_A  bc_dis_Xbegin  bc_dis_Xend  bc_dis_mt bc_dis_mz bc_dis_ZL bc_dis_freq 
+ BC_Para=1,           0,          0,               0,     321.936  0.d0,          1,   23.486     12.7d-3,        25.4d-3,     5           10       4.445d-3   28861.58
+ !Scheme_boundary= 0, 0, 1, 0, 0, 0    ! 0: WENO5 remove-stencil type (default);  -1: inner scheme (with Ghost Cell); 1 WENO5 (with Ghost Cell)    
+ !Ghost_cell=0,0,0, 0, 0, 0               ! 0: Non Ghost Cell;  1: 1st order exterpolation;  2: 2nd order exterpolation;  -1: user define 
+ ANA_Number= 1
+ ANA_Para(:,1)= 100, 1, 10000
+! ANA_Para(:,2)= 103, 100, 2, 1, 2, 1 
+! ANA_Para(:,3)= 103, 100, 3, 1, 1, 120
+! ANA_Para(:,4)= 103, 100,  2, 5, 1,  1, 2, 18, 73, 114
+
+ !             Kana   Kstep_ana  Kstep_save
+ $end
+
+ ! OpenCFD 2.2b 
+
+!--------------define of BC_Para -------------------
+!    BcData_inlet=nint(Para%BC_para(1))      ! inlet: (0 free-stream;  1 1d data;  2 2d data)
+!	 BcData_upper=nint(Para%Bc_para(2))      ! upper boundary: (0 free-stream, 1 1d data ,  2 2d data)
+!	 bc_upper_nonref=nint(Para%Bc_para(3))   ! upper boundary: 0 auto,  1 Non-Reflection,  2 Dirichlet 
+!	 bc_outlet=nint(Para%Bc_para(4))         ! outlet: 0 Non-Reflection,   1 1st order extrapolation,  2 2nd order extrapolation
+!    Tw=Para%Bc_para(5)                      ! wall temperature
+!	 Wall_Xinit=Para%Bc_para(6)              ! x location of the wall leading 
+!	 bc_dis_type=nint(Para%Bc_para(7))     ! wall disturbance type (0 none ;  1 multi-wave blow-and-suction, Ref: Rai MM, AIAA 95-0583)
+!	 bc_dis_A=Para%Bc_para(8)              ! Amplitude of wall disturbance     
+!	 bc_dis_Xbegin=Para%Bc_para(9)	       ! Initial location of wall disturbance
+!	 bc_dis_Xend=Para%Bc_para(10)          ! End location of wall disturbance
+!	 bc_dis_mt=nint(Para%Bc_para(11))     ! multi-frequency
+!	 bc_dis_mz=nint(Para%Bc_para(12))     ! multi-wavenumber
+!	 bc_dis_ZL=Para%Bc_para(13)           ! Spanwise Length
+!    bc_dis_freq=Para%Bc_para(14)         ! base frequancy of disturbance  
+!----------------------------------------------------
+
+
+!-------------default para-------------------------
+!npx0=1
+!npy0=1
+!npz0=1
+!LAP=4
+!Iperiodic_X=0
+!Iperiodic_Y=0
+!Iperiodic_Z=0
+!Scheme_Invis="WENO5"
+!Scheme_Vis="CD6"  
+!IF_Scheme_Character=0
+!Ref_Amu_T0=288.15d0
+!dt=1.d-9
+!End_time=100.d0
+!Iflag_Gridtype=GRID3D
+!Periodic_ISpan(:)=0.d0 
+!Periodic_JSpan(:)=0.d0
+!Periodic_KSpan(:)=0.d0 
+!BC_Para(:)=0.d0 
+!BoundaryCondition="BC_None"
+!Istep_show=1
+!Istep_save=1000
+!IF_Viscous=1
+!Scheme_boundary(:)=0 
+!IF_Mass_Force=0
+!Mass_Force(:)=0.d0
+!AoA=0.d0 
+!ANA_Number=0
+!ANA_Para=0.d0 
+!NFiltering=0
+!Filter_Para=0.d0 
+!UD7L_Diss=1.d0    ! Disspation for Low-dissipative Upwind difference scheme (0-1,   0 CD8 scheme, 1 UD7 scheme)
+!Hybrid_para(:)=1.d0  ! parameters for Hybrid scheme
+!Flux_Splitting=OCFD_Split_SW
+!Ghost_Cell(:)=0
+!Flag_Viscosity=0            ! 0: Amu_by_Sutherland,  1 Amu_by_Wilke
+!Flag_Conductivity=0         ! 0: Amk_by_Pr, 1 Amk_by_Wilke
+!Flag_Diffusion=0            ! 0: AmD_by_Sc, 1 AmD_by_Wilke
+!Amu0= 1.789d-5         ! viscosity of air at T=288.15K (in Pa.s) 
+!Pr=0.77d0              ! Prandtl number of Air 
+!Sc=1.d0                ! Schmidt number
+!Chemical_sub_step=1    ! Chemical sub step in one time step
+!IF_Reaction=0
+!IF_RealGas=1
+!CHEM_TimeAdv=1
+!--------------------------------------------------------

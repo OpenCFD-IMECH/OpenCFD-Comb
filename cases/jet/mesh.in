@@ -1,0 +1,12 @@
+  Xa,    nx1, Xet,  nx2
+   0.02   600  1.05  70
+  Ya,        ny1,  Yet1, ny2, Yet2, ny3
+   0.002    120    1.01  60  1.05   50   
+
+    open(80,file="mesh.in")
+    read(80,*)
+	read(80,*)  Xa, nx1, Xet, nx2
+	read(80,*)
+	read(80,*)  Ya, ny1, Yet1, ny2, Yet2, ny3
+	read(80,*) 
+    close(80)
