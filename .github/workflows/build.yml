@@ -24,8 +24,4 @@ jobs:
         cmake -S . -B build 
         cmake --build build -j 2
         cmake --install build
-        ./build/bin/gridgen-isotropic
-        cp -v OCFD-grid.dat ./build/RunTests/isotropic
-        ./build/bin/init-isotropic
-        cp -v opencfd-comb.dat ./build/RunTests/isotropic
         ctest --test-dir build
