@@ -23,6 +23,7 @@ file(COPY     OCFD-grid.dat DESTINATION ${case_dir})
 file(COPY     flow0d-upper-comb.dat DESTINATION ${case_dir})
 file(COPY     flow1d-inlet-comb.dat DESTINATION ${case_dir})
 
-
+set(MPIEXEC_FLAG "--oversubscribe")
 set(NUMPROCS "8")
-add_test(NAME ${case} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROCS} $<TARGET_FILE:opencfd-comb> WORKING_DIRECTORY ${case_dir})
+
+add_test(NAME ${case} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROCS} ${MPIEXEC_FLAG}  $<TARGET_FILE:opencfd-comb> WORKING_DIRECTORY ${case_dir})
