@@ -28,5 +28,7 @@ file(COPY diffusion_coefficients.in DESTINATION ${case_dir})
 file(COPY                 specie.in DESTINATION ${case_dir})
 file(COPY              viscosity.in DESTINATION ${case_dir})
 
+set(MPIEXEC_FLAG "–-oversubscribe")
 set(NUMPROCS "8")
-add_test(NAME ${case} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROCS} $<TARGET_FILE:opencfd-comb> WORKING_DIRECTORY ${case_dir})
+
+add_test(NAME ${case} COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_FLAG} ${NUMPROCS} $<TARGET_FILE:opencfd-comb> WORKING_DIRECTORY ${case_dir})
