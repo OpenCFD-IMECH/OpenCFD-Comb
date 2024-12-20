@@ -1,0 +1,11 @@
+#diffusion coefficents 
+#species number
+2
+#diffusion coefficents number
+3
+  'O2'              'O2'                
+-1.507E+01   3.252E+00  -2.050E-01   8.763E-03 
+  'N2'              'O2'                
+-1.476E+01   3.132E+00  -1.897E-01   8.112E-03
+  'N2'              'N2'                
+-1.453E+01   3.047E+00  -1.794E-01   7.690E-03
