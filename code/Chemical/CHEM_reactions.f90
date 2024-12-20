@@ -2,7 +2,9 @@
 ! Ver 1.3, 2016-11-20  重新改写;   考虑了高压反应， 双Arrhenius公式反应；  A使用mol/cm3作为单位
 ! Ver 1.3a, 2017-2-28, 修改了  Reaction_rate( ) 中的Bug  (关于三体浓度 Ctrb ）
 ! Ver 1.5, 2022-2-24, 支持隐格式
-! Ver 1.5a, 2023-8-15, 高压反应部分修改了Bug;  log(Fc) ==> log10(Fc)   , 文献中log() 是指以10为底的对数
+! Ver 1.5a, 2023-8-15, 高压反应部分修改了Bug;  log(Fc) ==> log10(Fc)
+! Ver 1.6, 2024-12-18,   支持 Park (1990) 逆反应速率模型，使用5参数拟合平衡常数（Ref: Passiatore （2022） JFM 941, A21, doi:10.1017/jfm.2022.283） 
+!          ReReac=0 ：基于Gibbs自由能的平衡常数； ReReac=1: 使用Arrhenius公式； ReReac=2: 使用Park (1990) 五参数拟合的平衡常数模型
 ! --------------------------------------------------------
 !  仅与化学反应速率有关的单位采用 mol-cm制 A*b**T*exp(-E/T)中的A
 !  本程序的接口仍采用国际单位制 :  kg-m-s-K-mol
@@ -21,8 +23,9 @@
     open(100,file="Reaction.in")                          ! 化学反应特征
     read(100,*)
     read(100,*) 
-! N_spec 组分数目；  N_REAC 化学反应数目;  ReReac 逆反应速率算法（1 采用Arrhenius公式， 0 采用平衡常数）
+! N_spec 组分数目；  N_REAC 化学反应数目;  ReReac 逆反应速率算法（0 采用基于Gibbs自由能的平衡常数, 1 采用Arrhenius公式，2 Park 1990 平衡常数模型 ）
 ! CHEM_TimeAdv 化学反应时间推进方法：1： 1阶Euler; 2： 2阶RK； 3： 3阶RK (目前版本尚不支持)； -1： 1阶隐格式
+
     read(100,*) N_Spec, N_REAC , ReReac     
     allocate(REAC(N_REAC))
     allocate(Vf(N_SPEC,N_REAC), Vr(N_SPEC,N_REAC) )          ! 反应系数矩阵 （维数：组分数*反应数）
@@ -41,8 +44,10 @@
       
 	  read(100,*) Rc%Af(1),Rc%Bf(1),Rc%Ef(1)                 ! 正反应系数
       if(Rc%Af_type .ne.  Af_nomal )     read(100,*)  Rc%Af(2), Rc%Bf(2), Rc%Ef(2)       ! 第2套正反应系数 （用于高压反应 或 双Arrhenius系数描述）
-	  if( ReReac==1)   read(100,*) Rc%Ar, Rc%Br, Rc%Er                                                 ! 逆反应系数 （如果采用化学平衡常数计算，则不使用）
-        
+	   if( ReReac==0) read(100,*)   ! 用平衡常数计算逆反应，不使用参数； 读取空行，保持Reaction.in的通用性
+	   if( ReReac==1)  read(100,*) Rc%Ar, Rc%Br, Rc%Er                     ! Arrhenius 格式的逆反应速率系数 
+       if( ReReac==2)  read(100,*) Rc%A1r, Rc%A2r, Rc%A3r, Rc%A4r, Rc%A5r  ! Park 平衡常数模型中的5个参数， 用于算逆反应速率
+	  
       read(100,*) (vf(i,j), i=1,N_spec)    ! 正反应系数矩阵
       read(100,*) (vr(i,j), i=1,N_spec)    ! 逆反应系数矩阵
       
@@ -61,9 +66,9 @@
     ! print*, "read Reaction.in OK"
     ! print*, "N_spec=", N_spec, "N_Reac=", N_Reac    
 
-!-----------------------------------------------------------------------------------
-
   end subroutine read_Reac
+
+
 
 
 
@@ -98,12 +103,20 @@
   end
 
 !-----------------------------------------------------------------------
-  function Arrhenius(A,b,E,T)
+function Arrhenius(A,b,E,T)          ! Arrhenius 公式
+  	use Precision_EC	
+	implicit none
+  	real(PRE_EC)::  A,b,E,T,Arrhenius
+  	Arrhenius=A*T**b*exp(-E/T)          ! E使用 K 作为单位；  
+end
+
+function ParkCurveFit(A1,A2,A3,A4,A5,T)       ! Park 5参数拟合公式， 计算平衡常数Kjx
     use Precision_EC
 	implicit none
-    real(PRE_EC)::  A,b,E,T,Arrhenius
-    Arrhenius=A*T**b*exp(-E/T)          ! E使用 K 作为单位；  
-  end
+    real(PRE_EC)::  A1,A2,A3,A4,A5,T,ParkCurveFit,z
+	z = 10000.d0/T
+    ParkCurveFit = exp(A1 + A2*z + A3*(z**2) + A4*(z**3) + A5*(z**4))            
+end
 !---------------------------------------------------------------------
 
 
@@ -112,94 +125,104 @@
 !   计算化学反应速率系数  (单位：mol-cm-K-s 制)
 !   注意， 与其他子程序单位不同，尤其是 cm制
 !   速率系数中包含了与三体反应有关的量
-	   subroutine Reaction_rate_coef(ci,wf,wr,T)  ! wf, wr 正反应及逆反应的速率系数
-       use CHEM
- 	   implicit none
-	   real(PRE_EC),dimension(N_Reac):: wf,wr, Kjx  ! 反应速率系数;  化学反应平衡常数 (mol-cm-K unit)
-	   real(PRE_EC),dimension(N_Spec):: ci     ! 摩尔浓度 (mol/cm3) 
-       real(PRE_EC):: T,Ctrb,Arrhenius , wf1,wf2, Prs, F,logFc, ac,an       !化学反应速率有关量
-       TYPE (REACTION), pointer:: RC
+!   高压反应中的log(Fc) 修改为 log10(Fc)  (文献中的 log() 指的是log10(), 而不是 ln())
+!   添加了 Park 逆反应速率模型 （2024-12-19）
+	subroutine Reaction_rate_coef(ci,wf,wr,T)  ! wf, wr 正反应及逆反应的速率系数
+    use CHEM
+	
+ 	implicit none
+	real(PRE_EC),dimension(N_Reac):: wf,wr, Kjx  ! 反应速率系数;  化学反应平衡常数 (mol-cm-K unit)
+	real(PRE_EC),dimension(N_Spec):: ci     ! 摩尔浓度 (mol/cm3) 
+    real(PRE_EC):: T,Ctrb,Arrhenius ,ParkCurveFit, wf1,wf2, Prs, F,Fc, ac,an       !化学反应速率有关量
+    TYPE (REACTION), pointer:: RC
 
-	   integer:: i,j,k
-		
-        if(ReReac ==0) then        ! 计算化学反应平衡常数 （ReReac=1 使用Arrhenius公式计算逆反应速率，无需平衡常数）
-           call comput_KjX(T,Kjx)
+	integer:: i,j,k
+	! 基于Gibbs自由能，计算化学反应平衡常数Kjx （ReReac=1 使用Arrhenius公式计算逆反应速率,无需使用kjx;  ReReac=2 采用Park 公式计算kjx）
+        if(ReReac ==0) then        
+        	call comput_KjX(T,Kjx)
         endif
 
 ! ----------  计算化学反应速率常数 wf, wr ----------------
-	do j=1,N_REAC
-	 Rc=>REAC(j)
+		do j=1,N_REAC
+	 		Rc=>REAC(j)
 	 
-		  if(Rc%TrReac .eq. 1) then            ! Three-body reaction
-           Ctrb=0.d0
-		   do i=1,N_SPEC
-             Ctrb=Ctrb+ci(i)*Rc%TrEff(i)             ! 三体浓度 （各组分加权和；Rc%TrEff(:)为影响因子 ）
-		   enddo
-          endif
+			if(Rc%TrReac .eq. 1) then            ! Three-body reaction
+        		Ctrb=0.d0
+				do i=1,N_SPEC
+        	   		Ctrb=Ctrb+ci(i)*Rc%TrEff(i)             ! 三体浓度 （各组分加权和；Rc%TrEff(:)为影响因子 ）
+			 	enddo
+        	endif
 
 !     正反应速率常数
-		  wf1=Arrhenius(Rc%Af(1), Rc%bf(1), Rc%Ef(1), T)            ! 正反应速度系数
-		  if(  Rc%Af_type .eq.  Af_nomal)  then
-		     wf(j)=wf1                                                                        ! 常规反应
-          else if (Rc%Af_type .eq. Af_DualArrhenius) then                ! 双Arrhenius公式描述
-		    wf2=Arrhenius(Rc%Af(2), Rc%bf(2), Rc%Ef(2), T) 
-			wf(j)=wf1+wf2
-         else if (Rc%Af_type .eq. Af_Highpress) then                        !  高压反应；  Fall-off 型三体反应， 如 H+O2 (+M) = HO2 (+M)
-		    wf2=Arrhenius(Rc%Af(2), Rc%bf(2), Rc%Ef(2), T) 
-			Prs=wf1/wf2*Ctrb                          ! Ctrb=[M]
-            logFc=log10(Rc%Fc_troe)                              ! 高压反应的Troe形式， 见Chemkin理论手册， 文献中的log(Fc)指的是 log10(Fc)， 2023-8-15
-			ac=-0.4d0-0.67*logFc
-            an=0.75d0-1.27*logFc
-!            F=10.d0**(logFc/( 1.d0+ ( (log(Prs)+ac)/(an-0.14d0*(log(Prs)+ac) ) )**2))     ! ???  log(Prs) ==> log10(Prs)
-            F=10.d0**(logFc/( 1.d0+ ( (log10(Prs)+ac)/(an-0.14d0*(log10(Prs)+ac) ) )**2))     !   log(Prs) should be log10(Prs)
-	!		wf(j)=wf2*Prs/(1.d0+Prs)                 ! Lindemann type
-	        wf(j)=wf2*Prs/(1.d0+Prs)*F               ! Troe type
-         endif
-!     逆反应速率常数
-		 if(ReReac ==1) then
-		   wr(j)=Arrhenius(Rc%Ar,Rc%br,Rc%Er,T)            ! 负反应速度系数
-         else
-           wr(j)=wf(j)/kjx(j)      
-         endif
+		  	wf1=Arrhenius(Rc%Af(1), Rc%bf(1), Rc%Ef(1), T)            ! 正反应速度系数
+			if(  Rc%Af_type .eq.  Af_nomal)  then
+				wf(j)=wf1                                                                        ! 常规反应
+        	else if (Rc%Af_type .eq. Af_DualArrhenius) then                ! 双Arrhenius公式描述
+				wf2=Arrhenius(Rc%Af(2), Rc%bf(2), Rc%Ef(2), T) 
+				wf(j)=wf1+wf2
+        	else if (Rc%Af_type .eq. Af_Highpress) then                        !  高压反应；  Fall-off 型三体反应， 如 H+O2 (+M) = HO2 (+M)
+				wf2=Arrhenius(Rc%Af(2), Rc%bf(2), Rc%Ef(2), T) 
+				Prs=wf1/wf2*Ctrb                          ! Ctrb=[M]
+        		Fc=Rc%Fc_troe                              ! 高压反应的Troe形式， 见Chemkin理论手册
+!				ac=-0.4d0-0.67*log(Fc)
+!        		an=0.75d0-1.27*log(Fc)
+!        		F=exp(log(Fc)/( 1.d0+ ( (log(Prs)+ac)/(an-0.14d0*(log(Prs)+ac) ) )**2) )
+				ac=-0.4d0-0.67*log10(Fc)
+        		an=0.75d0-1.27*log10(Fc)
+        		F=10.d0**(log10(Fc)/( 1.d0+ ( (log10(Prs)+ac)/(an-0.14d0*(log10(Prs)+ac) ) )**2) )
+
+!               wf(j)=wf2*Prs/(1.d0+Prs)                 ! Lindemann type
+	    		wf(j)=wf2*Prs/(1.d0+Prs)*F               ! Troe type
+        	endif
+
+!     计算逆反应速率 （3种模型）
+!          2024-12-19, 引入Park 1990 模型
+            if(ReReac ==0 ) then 
+			   wr(j)=wf(j)/kjx(j)           ! 基于Gibbs函数的平衡常数模型 
+			else if (ReReac ==1) then 
+			   wr(j)=Arrhenius(Rc%Ar,Rc%br,Rc%Er,T)            ! 基于Arrhenius公式的逆反应速率模型
+            else if (ReReac ==2) then
+			  kjx(j)=ParkCurveFit(Rc%A1r,Rc%A2r,Rc%A3r,Rc%A4r,Rc%A5r,T)   ! Park  模型, 计算平衡常数 
+	          if(kjx(j) < 1.d-30) kjx(j)=1.d-30                ! 设定下限防止分母为0，1.d-30 有人为性。 2024-12-19  		  
+			  wr(j)=wf(j)/kjx(j)
+!              wr(j)=ParkCurveFit(Rc%A1r,Rc%A2r,Rc%A3r,Rc%A4r,Rc%A5r,T)     ! wrong test 
+			endif 
+
 		 
-	     if(Rc%TrReac .eq. 1  .and. Rc%Af_type .ne. Af_Highpress ) then       !  三体反应 （非Fall-off型； Fall-off型的速率常数中包含了三体浓度Ctrb)
-           wf(j)=wf(j)*Ctrb
-		   wr(j)=wr(j)*Ctrb
-         endif
-	  enddo 
-	  end
+	    	if(Rc%TrReac .eq. 1  .and. Rc%Af_type .ne. Af_Highpress ) then       !  三体反应 （非Fall-off型； Fall-off型的速率常数中包含了三体浓度Ctrb)
+        		wf(j)=wf(j)*Ctrb
+				wr(j)=wr(j)*Ctrb
+        	endif
+	  	enddo 
+	end subroutine Reaction_rate_coef
 	  
 
 
 !     计算反应物生成率  (mol/(cm3.s))
 !     单位 mol-cm-K   （注意， 与其他子程序单位不同，尤其是 cm制)	    
-	   subroutine Reaction_rate(ci,ri,T)  
-       use CHEM
- 	   implicit none
-	   real(PRE_EC),dimension(N_Reac):: wf,wr  ! 反应速率系数 (mol-cm-K unit)
-	   real(PRE_EC),dimension(N_Spec):: ci,ri     ! 摩尔浓度 (mol/cm3) , 反应物生成率 (mol/(cm3.s))
-       real(PRE_EC):: T,wf1,wr1
-	   integer:: i,j
-	   
+	subroutine Reaction_rate(ci,ri,T)  
+    use CHEM
+ 	implicit none
+	real(PRE_EC),dimension(N_Reac):: wf,wr  ! 反应速率系数 (mol-cm-K unit)
+	real(PRE_EC),dimension(N_Spec):: ci,ri     ! 摩尔浓度 (mol/cm3) , 反应物生成率 (mol/(cm3.s))
+    real(PRE_EC):: T,wf1,wr1
+	integer:: i,j
 !   计算反应速率系数 wf, wr   ( 单位 mol-s-K-cm 制 )
-      call Reaction_rate_coef(ci,wf,wr,T)
+    	call Reaction_rate_coef(ci,wf,wr,T)
 !   计算化学反应速率 wf1, wr1  	  单位： mol/(cm3-s)
-	 ri(:)=0.d0 
-	 do j=1,N_REAC
-	   wf1=wf(j)        ! 正反应速率 （第j个反应）
-	   wr1=wr(j)        ! 逆反应速率（第j个反应）
-		 do i=1,N_SPEC
-		  if(vf(i,j) .ne. 0) wf1=wf1*ci(i)**vf(i,j)
-		  if(vr(i,j) .ne. 0) wr1=wr1*ci(i)**vr(i,j)
-		 enddo
-	     do i=1,N_SPEC         ! 组分
-          ri(i)=ri(i)+ (wf1-wr1) *(vr(i,j)-vf(i,j))   ! 第i个组分的生成率 (摩尔/(立方厘米.秒))        
-		 enddo
-      enddo
-!---------------------------------------------------------
-
-  
-   end
+	 	ri(:)=0.d0 
+	 	do j=1,N_REAC
+	 	  	wf1=wf(j)        ! 正反应速率 （第j个反应）
+	 	  	wr1=wr(j)        ! 逆反应速率（第j个反应）
+			do i=1,N_SPEC
+				if(vf(i,j) .ne. 0) wf1=wf1*ci(i)**vf(i,j)
+				if(vr(i,j) .ne. 0) wr1=wr1*ci(i)**vr(i,j)
+			enddo
+	 	    do i=1,N_SPEC         ! 组分
+     	    	ri(i)=ri(i)+ (wf1-wr1) *(vr(i,j)-vf(i,j))   ! 第i个组分的生成率 (摩尔/(立方厘米.秒))        
+			enddo
+     	enddo
+    end subroutine Reaction_rate
 
 !---化学反应速率,及其导数矩阵 Arate(i,j)=  d(ri)/d(cj)          ( 摩尔浓度生成率对摩尔浓度的导数； 没有乘以Mi/Mj)
   !     计算反应物生成率  (mol/(cm3.s))
@@ -309,10 +332,13 @@
 		    wf2=Arrhenius(Rc%Af(2), Rc%bf(2), Rc%Ef(2), T) 
 			Prs=wf1/wf2*Ctrb                          ! Ctrb=[M]
 !			wf(j)=wf2*Prs/(1.d0+Prs)               ! Lindemann type
-   			ac=-0.4d0-0.67*log(Fc)
-            an=0.75d0-1.27*log(Fc)
-            F=exp(log(Fc)/( 1.d0+ ( (log(Prs)+ac)/(an-0.14d0*(log(Prs)+ac) ) )**2) )
-	       wf(j)=wf2*Prs/(1.d0+Prs)*F               ! Troe type
+!  	         ac=-0.4d0-0.67*log(Fc)
+!            an=0.75d0-1.27*log(Fc)
+!            F=exp(log(Fc)/( 1.d0+ ( (log(Prs)+ac)/(an-0.14d0*(log(Prs)+ac) ) )**2) )
+			 ac=-0.4d0-0.67*log10(Fc)
+        	 an=0.75d0-1.27*log10(Fc)
+        	 F=10.d0**(log10(Fc)/( 1.d0+ ( (log10(Prs)+ac)/(an-0.14d0*(log10(Prs)+ac) ) )**2) )			
+	        wf(j)=wf2*Prs/(1.d0+Prs)*F               ! Troe type
 
 	    endif
 !     逆反应速率常数

@@ -1,4 +1,5 @@
 ! boundary conditions： boundary-layers  (transition/ STBLI/ ...) 
+! 2024-5-12 (ver 3.1)  Wall jet boundary condition is added
 !---------------------------------------------------------------------
    module BC_data 
    use OCFD_precision
@@ -21,7 +22,7 @@
 	use BC_data  
 	implicit none 
 	integer i,j,k,m
-	integer:: BcData_inlet, BcData_upper,bc_upper_nonref,bc_outlet,bc_dis_type,bc_dis_mt,bc_dis_mz
+	integer:: BcData_inlet, BcData_upper,bc_upper_nonref,bc_outlet,bc_dis_type,bc_dis_mt,bc_dis_mz, Iflag_wall_jet
 	Real(kind=OCFD_REAL_KIND):: Tw,Wall_Xinit,bc_dis_A,bc_dis_Xbegin,bc_dis_Xend,bc_dis_ZL,bc_dis_freq
 	Real(kind=OCFD_REAL_KIND)::  ht, tmp,A0
 	Real(kind=OCFD_REAL_KIND):: di1(N_SPEC),di2(N_SPEC),di3(N_SPEC),p1,p2,p3,d0,d1
@@ -43,7 +44,8 @@
 	 bc_dis_mz=nint(Para%Bc_para(12))     ! multi-wavenumber
 	 bc_dis_ZL=Para%Bc_para(13)           ! Spanwise Length
      bc_dis_freq=Para%Bc_para(14)         ! base frequancy of disturbance  
-	 
+!--------	 
+	 Iflag_wall_jet=nint(Para%Bc_para(15))
 	 
  !-------- j=1 wall ----------------		 
      if(BC%bc_init ==0 ) then 
@@ -144,8 +146,20 @@
 !----wall----------------------------------------------- 
      call get_ht_multifrequancy(ht,tt,bc_dis_mt, bc_dis_freq)
      if(npy.eq.0) then
-      do k=1,nz
-      do i=1,nx
+     do k=1,nz
+     do i=1,nx
+	 if(Axx(i,1,k) < Wall_Xinit ) then 
+	  ! 壁面之前 （对称条件） 
+	  d(i,1,k)=d(i,2,k) 
+	  u(i,1,k)=u(i,2,k)
+	  v(i,1,k)=v(i,2,k) 
+	  w(i,1,k)=w(i,2,k) 
+	  T(i,1,k)=T(i,2,k) 
+	  do m=1,N_SPEC 
+	  di(i,1,k,m)=di(i,2,k,m) 
+	  enddo 
+	  
+	 else    ! 壁面
 	   tmp=1.d0/(sqrt(Aix(i,1,k)**2+Aiy(i,1,k)**2+Aiz(i,1,k)**2)) 
 	   A0=bc_dis_A*ht* BC%wall_pertb(i,k)
 	   u(i,1,k)=A0*Aix(i,1,k)*tmp      !  Aix*tmp  normal vector 
@@ -180,7 +194,7 @@
 		do m=1,N_SPEC 
 		di(i,1,k,m)=di1(m)*d1 
 		enddo 
-		
+	   endif	
 	  enddo 
 	  enddo 
 	  
@@ -200,7 +214,7 @@
 	  enddo 
 	 enddo 
 	 enddo 
-    else if (bc_outlet==2) then 
+    elseif (bc_outlet==2) then 
 	 do k=1,nz 
 	 do j=1,ny 
 	  d(nx,j,k)=2.d0*d(nx-1,j,k)-d(nx-2,j,k)
@@ -215,6 +229,16 @@
 	 enddo 	
    endif 	
    endif 
+
+   
+!  Wall Jet boundary condition  壁面射流边界条件
+   if(Iflag_wall_jet .eq. 1) then 
+    call bc_wall_jet1               ! 圆孔壁面射流
+   elseif( Iflag_wall_jet .eq. 2) then 
+    call bc_wall_jet2               ! 任意形状壁面射流， 通过窗口文件进行描述
+   endif 
+   
+
 
     end 	
 	

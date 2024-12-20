@@ -89,6 +89,8 @@ module flow_para
   Real(kind=OCFD_REAL_KIND):: Mass_Force(3)                   ! Mass force  (such as gravity)
   Real(kind=OCFD_REAL_KIND):: ANA_Para(100,10)                ! parameters for post analysis code 
   Real(kind=OCFD_REAL_KIND):: Filter(100,10)                ! parameters for filtering 
+  integer:: IF_debug         ! 0 no debug;   1 debug model  (more message)
+  integer:: Iflag_particle        ! 0 no particle;  1 with particle
   end TYPE 
  
  TYPE (TYPE_Para):: Para
