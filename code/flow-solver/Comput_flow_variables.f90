@@ -108,6 +108,8 @@
 	  do i=1,nx
 	  d0=0.d0
 	  do m=1,N_SPEC 
+	  ! constrain di >=0 , 2024-5-18  
+  	   if(di(i,j,k,m)<0.d0)  di(i,j,k,m)=0.d0            ! 2024-5-18,  keep di >=0           
 	  d0=d0+di(i,j,k,m)
 	  enddo 
 	  tmp=d(i,j,k)/d0 

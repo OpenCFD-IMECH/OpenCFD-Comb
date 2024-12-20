@@ -35,7 +35,12 @@
 	   endif
 
 	   call  flow_time_advance(dt1)  
+	   
+	   if(Para%Iflag_particle == 1) call comput_particle   ! comput particle 2024
 !c ---------------4. Loop of t ------------------
+        if(Para%IF_debug .eq. 1) then 
+		 call debug_NaN 
+        endif 
 
 	    Istep=Istep+1
         tt=tt+Para%dt

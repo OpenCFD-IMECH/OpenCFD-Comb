@@ -1,16 +1,18 @@
-! ÓëÈÈÁ¦Ñ§ÓĞ¹ØµÄ¼ÆËã
-! Ver 0.36, 2016-10-16, ¼ÆËãEÊ±¿¼ÂÇÁË¿çTctĞŞÕı 
-! Ver 0.37a, Newton·¨¼ÆËãÎÂ¶È
-! Ver 1.3a  2016-11-20  ½øĞĞÁË¸ÄĞ´ £¨°æÊ½ĞŞ¸Ä£¬ÈÈÁ¦Ñ§Á¿¼ÆËã²¢Î´ĞŞ¸Ä£©
-! Ver 1.4, 2022-2-21 1) ÈÈÁ¦Ñ§Á¿Ö§³Ö¶à¶ÎÄâºÏ£¨Ô­°æ±¾Ö»Ö§³Ö2¶ÎÄâºÏ£©£»  2£© ÎÂ¶È³¬¹ıÄâºÏÉÏÏŞÊ±£¬CpÉè¶¨Îª³£Êı
+ï»¿! ä¸çƒ­åŠ›å­¦æœ‰å…³çš„è®¡ç®—
+! Ver 0.36, 2016-10-16, è®¡ç®—Eæ—¶è€ƒè™‘äº†è·¨Tctä¿®æ­£ 
+! Ver 0.37a, Newtonæ³•è®¡ç®—æ¸©åº¦
+! Ver 1.3a  2016-11-20  è¿›è¡Œäº†æ”¹å†™ ï¼ˆç‰ˆå¼ä¿®æ”¹ï¼Œçƒ­åŠ›å­¦é‡è®¡ç®—å¹¶æœªä¿®æ”¹ï¼‰
+! Ver 1.4, 2022-2-21 1) çƒ­åŠ›å­¦é‡æ”¯æŒå¤šæ®µæ‹Ÿåˆï¼ˆåŸç‰ˆæœ¬åªæ”¯æŒ2æ®µæ‹Ÿåˆï¼‰ï¼›  2ï¼‰ æ¸©åº¦è¶…è¿‡æ‹Ÿåˆä¸Šé™æ—¶ï¼ŒCpè®¾å®šä¸ºå¸¸æ•°
+! Ver 1.4a, 2024-11-2, Bug in comput_Cp_rgas is romoved
+! Ver 1.5, 2024-12-18, åœ¨specie.in ä¸­ä½¿ç”¨äº† Sp%SpecFlag ï¼ˆ1 å•åŸå­ï¼Œ 2 åŒåŸå­ï¼‰ 
 !----------------------------------------------------------------------------
 !  read_Spec( ) ;  
 !    comput_E(di,T,E) ;    comput_Cp(d,di,T,Cp) ;  comput_T(di,E,T) ;  comput_hi(k,T,hi) 
-!    IF_RealGas ==  Perfect_GAS  or Real_GAS  (Ä¬ÈÏÎªReal_GAS)
+!    IF_RealGas ==  Perfect_GAS  or Real_GAS  (é»˜è®¤ä¸ºReal_GAS)
 !    update_Et(di,dinew,E,T)
 !-------------------------------------------------------------------------------
 
-  ! ¶ÁÈë×é·ÖÈÈÁ¦Ñ§ÌØĞÔ
+  ! è¯»å…¥ç»„åˆ†çƒ­åŠ›å­¦ç‰¹æ€§
   subroutine read_Spec
     use CHEM
     implicit none
@@ -19,25 +21,26 @@
     integer:: i,j,k
     allocate(Spec(N_Spec))
  
-    !¶ÁÈë×é·ÖÌØĞÔ  
+    !è¯»å…¥ç»„åˆ†ç‰¹æ€§   
     open(99,file="specie.in")       
     read(99,*)
     read(99,*)
-    read(99,*)  N_Tct, (Tct(k),k=1,N_Tct-1), Tct_max     ! N_Tct:ÈÈÁ¦Ñ§Á¿·Ö¶ÎÄâºÏµÄ¶ÎÊı£¨Í¨³£Îª2£©£» ×ª»»ÎÂ¶È(ÀıÈç1000K)£» ÄâºÏ×î¸ßÎÂ¶È£¨³¬¹ı¸ÃÖµCpÎª¶¨Öµ£©
+    read(99,*)  N_Tct, (Tct(k),k=1,N_Tct-1), Tct_max    ! N_Tct:çƒ­åŠ›å­¦é‡åˆ†æ®µæ‹Ÿåˆçš„æ®µæ•°ï¼ˆé€šå¸¸ä¸º2ï¼‰ï¼› è½¬æ¢æ¸©åº¦(ä¾‹å¦‚1000K)ï¼› æ‹Ÿåˆæœ€é«˜æ¸©åº¦ï¼ˆè¶…è¿‡è¯¥å€¼Cpä¸ºå®šå€¼ï¼‰
     read(99,*)
     do k=1,N_Spec
       SP=>Spec(k)
       read(99,*)
       read(99,*)  Sp%name                                                     
-      read(99,*)  Sp%Mi                                                ! ×é·ÖÄ¦¶ûÖÊÁ¿
+      read(99,*)  Sp%Mi  ,   Sp%SpecFlag         ! Mi ç»„åˆ†æ‘©å°”è´¨é‡   ;  SpecFlag å•åŸå­ä¸º1, åŒåŸå­ä¸º2
+                        
 	  do j=1,N_Tct
-      read(99,*) SP%Ai(j),SP%Bi(j),SP%Ci(j),SP%Di(j),SP%Ei(j),SP%Fi(j),SP%Gi(j)            ! ×é·ÖÈÈÁ¦Ñ§²ÎÊı£¨·Ö¶ÎÄâºÏ£¬µÚj¶Î£©
+      read(99,*) SP%Ai(j),SP%Bi(j),SP%Ci(j),SP%Di(j),SP%Ei(j),SP%Fi(j),SP%Gi(j)           ! ç»„åˆ†çƒ­åŠ›å­¦å‚æ•°ï¼ˆåˆ†æ®µæ‹Ÿåˆï¼Œç¬¬jæ®µï¼‰
       enddo
       Sp%Ri=R0/Sp%Mi
 	  
-!     Sp%Ect=Sp%F2-Sp%F1   ! ¿çTctµÄÄÚÄÜ£¨»òìÊ£©²î
-      Sp%Ect(1)=0.d0         ! µÚ1¶ÎÄâºÏ£¬²»ĞŞÕı
-      do j=1,N_Tct-1      ! ¿çÄâºÏ¶ÎµÄìÊ²î  £¨²¹³äµ½ÈÈìÊÄâºÏ¹«Ê½ÖĞ£¬ Ê¹µÃÈÈìÊ¿çÄâºÏ¶ÎÁ¬Ğø£©   £¨ÀíÂÛÉÏÓëSp%F2-Sp%F1 ÖµÏàÍ¬£¬µ«¾«¶È¸ü¸ßĞ©£©
+!     Sp%Ect=Sp%F2-Sp%F1   ! è·¨Tctçš„å†…èƒ½ï¼ˆæˆ–ç„“ï¼‰å·®
+      Sp%Ect(1)=0.d0       ! ç¬¬1æ®µæ‹Ÿåˆï¼Œä¸ä¿®æ­£
+      do j=1,N_Tct-1      ! è·¨æ‹Ÿåˆæ®µçš„ç„“å·®  ï¼ˆè¡¥å……åˆ°çƒ­ç„“æ‹Ÿåˆå…¬å¼ä¸­ï¼Œ ä½¿å¾—çƒ­ç„“è·¨æ‹Ÿåˆæ®µè¿ç»­ï¼‰   ï¼ˆç†è®ºä¸Šä¸Sp%F2-Sp%F1 å€¼ç›¸åŒï¼Œä½†ç²¾åº¦æ›´é«˜äº›ï¼‰
 	  Sp%Ect(j+1)= -( (Sp%Ai(j+1)-Sp%Ai(j))*Tct(j) +(Sp%Bi(j+1)-Sp%Bi(j))*Tct(j)**2/2.d0 & 
 	            + (Sp%Ci(j+1)-Sp%Ci(j))*Tct(j)**3/3.d0 +(Sp%Di(j+1)-Sp%Di(j))*Tct(j)**4/4.d0 &
 				+ (Sp%Ei(j+1)-Sp%Ei(j))*Tct(j)**5/5.d0 ) + Sp%Ect(j) 
@@ -48,10 +51,10 @@
   end subroutine read_Spec
 
 !---------------------------------------------------------------------------------
-!--------×´Ì¬·½³ÌÏà¹Ø¼ÆËã £¨ÃÜ¶È¡¢ Ñ¹Á¦¡¢ ÎÂ¶È ¡¢ÄÚÄÜ ¡¢ ±ÈÈÈ µÈ£© -------------------
- ! ÍêÈ«ÆøÌå or ÕæÊµÆøÌå £¨Cp ·Ç³£Êı£©
+!--------çŠ¶æ€æ–¹ç¨‹ç›¸å…³è®¡ç®— ï¼ˆå¯†åº¦ã€ å‹åŠ›ã€ æ¸©åº¦ ã€å†…èƒ½ ã€ æ¯”çƒ­ ç­‰ï¼‰ -------------------
+ ! å®Œå…¨æ°”ä½“ or çœŸå®æ°”ä½“ ï¼ˆCp éå¸¸æ•°ï¼‰
  
- ! ¼ÆËãÄÚÄÜ £¨²»º¬·´Ó¦ìÊ£©
+ ! è®¡ç®—å†…èƒ½ ï¼ˆä¸å«ååº”ç„“ï¼‰
   subroutine comput_E(di,T,E)           
     use CHEM
     implicit none
@@ -65,7 +68,7 @@
    end
 
   
-! ¼ÆËã¶¨Ñ¹±ÈÈÈ   
+! è®¡ç®—å®šå‹æ¯”çƒ­   
   subroutine comput_Cp(d,di,T,Cp)
     use CHEM
     implicit none
@@ -78,7 +81,7 @@
    endif
    end
 
-! ÒÑÖªÄÚÄÜ¼ÆËãÎÂ¶È
+! å·²çŸ¥å†…èƒ½è®¡ç®—æ¸©åº¦
   subroutine comput_T(di,E,T)
     use CHEM
     implicit none
@@ -91,7 +94,7 @@
    endif
    end
 
- !  ×é·ÖìÊ
+!  ç»„åˆ†ç„“
     subroutine comput_hi(k,T,hi)
     use CHEM
     implicit none
@@ -105,10 +108,10 @@
    end
 
 
-!----------------ÍêÈ«ÆøÌå Cv=5/2 R, Cp=7/2 R --------------------
+!----------------å®Œå…¨æ°”ä½“ Cv=5/2 R, Cp=7/2 R --------------------
 
-!  Perfect gas  ÍêÈ«ÆøÌå¼ÆËã  (Cv=5/2 R )
-  subroutine comput_E_pgas(di,T,E)            ! ÍêÈ«ÆøÌå
+!  Perfect gas  å®Œå…¨æ°”ä½“è®¡ç®— (Cv=5/2 R )
+  subroutine comput_E_pgas(di,T,E)           ! å®Œå…¨æ°”ä½“
     use CHEM
     implicit none
     integer k
@@ -119,7 +122,7 @@
      enddo
    end
 
-! ¼ÆËã¶¨Ñ¹±ÈÈÈ Cp   
+! è®¡ç®—å®šå‹æ¯”çƒ­ Cp   
   subroutine comput_Cp_pgas(d,di,T,Cp)
     use CHEM
     implicit none
@@ -129,8 +132,28 @@
      do k=1,N_SPEC
       Cp=Cp+3.5d0*SPEC(k)%Ri*di(k)        ! Cp=3.5R 
      enddo
-     Cp=Cp/d                 ! ÃÜ¶È¼ÓÈ¨Æ½¾ù
+     Cp=Cp/d                 ! å¯†åº¦åŠ æƒå¹³å‡
    end
+
+   ! è®¡ç®—å®šå®¹æ¯”çƒ­ Cv   
+  subroutine comput_Cv_EuckenFormula(Cv)
+    use CHEM
+    implicit none
+    integer k
+    real(PRE_EC):: Cp(N_SPEC),Cv(N_SPEC)
+    integer, parameter:: MonoatomicSpecies = 1 ,DiatomicSpecies = 2 !MonoatomicSpecieså•åŸå­ ï¼ŒDiatomicSpeciesåŒåŸå­
+      Cp=0.d0
+      Cv=0.d0
+      do k=1,N_SPEC
+        if(SPEC(k)%SpecFlag .eq. MonoatomicSpecies )then
+          Cp(k) = 2.5d0 * SPEC(k)%Ri                !å•åŸå­
+          Cv(k) = Cp(k) - SPEC(k)%Ri
+        else
+          Cp(k) = 2.5d0 * SPEC(k)%Ri + SPEC(k)%Ri   !åŒåŸå­
+          Cv(k) = Cp(k) - SPEC(k)%Ri
+        endif
+      enddo
+  end subroutine comput_Cv_EuckenFormula
 
   subroutine comput_T_pgas(di,E,T)
     use CHEM
@@ -145,7 +168,7 @@
     end
  
   
-! ¸ù¾İÎÂ¶È£¬¼ÆËã×é·ÖìÊ, ²»º¬·´Ó¦ìÊ  
+! æ ¹æ®æ¸©åº¦ï¼Œè®¡ç®—ç»„åˆ†ç„“, ä¸å«ååº”ç„“    
   subroutine comput_hi_pgas(k,T,hi)
     use CHEM
     implicit none
@@ -156,27 +179,27 @@
 
   
 
-!---------»¯Ñ§·´Ó¦ÒıÆğµÄÄÚÄÜ±ä»¯---------------------
-!----------¸ù¾İ·´Ó¦ìÊ¸üĞÂÄÚÄÜ £¨ÒÑ¿¼ÂÇÁË¿çTctĞŞÕı£©-------------
+!---------åŒ–å­¦ååº”å¼•èµ·çš„å†…èƒ½å˜åŒ–---------------------
+!----------æ ¹æ®ååº”ç„“æ›´æ–°å†…èƒ½ ï¼ˆå·²è€ƒè™‘äº†è·¨Tctä¿®æ­£ï¼‰-------------
   subroutine update_Et(di,dinew,E,T)
     use CHEM
     implicit none
-    real(PRE_EC) :: E,T,F0        ! ÄÚÄÜ£¨²»º¬·´Ó¦ìÊ£©£¬ ÎÂ¶È£¬ F0 ·´Ó¦ìÊ
-    real(PRE_EC),dimension(N_Spec) :: di, dinew, bi      ! ¾ÉµÄ×é·ÖÃÜ¶È¡¢ĞÂµÄ×é·ÖÃÜ¶È
+    real(PRE_EC) :: E,T,F0        ! å†…èƒ½ï¼ˆä¸å«ååº”ç„“ï¼‰ï¼Œ æ¸©åº¦ï¼Œ F0 ååº”ç„“
+    real(PRE_EC),dimension(N_Spec) :: di, dinew, bi      ! æ—§çš„ç»„åˆ†å¯†åº¦ã€æ–°çš„ç»„åˆ†å¯†åº¦
     integer :: i,j,k
  
     do i=1,N_SPEC
-!      F0=Spec(i)%F1               ! ÒÑ¿¼ÂÇÁË¿çTctĞŞÕı
-      F0=Spec(i)%Fi(1)             ! ÒÑ¿¼ÂÇÁË¿çTctĞŞÕı, Ö»Ê¹ÓÃµÚ1¶ÎÄâºÏÇøµÄFiÖµ  £¨ÆäËûÇø¶ÎµÄÒÑÍ¨¹ıEctĞŞÕı£¬°üº¬ÔÚÈÈìÊÖĞ£©
-      E=E-(dinew(i)-di(i))*SPEC(i)%Ri*F0    ! ¸üĞÂÄÚÄÜ £¨¼ÓÈë»¯Ñ§·´Ó¦ÊÍ·Å/ÎüÊÕµÄÄÜÁ¿£©
+!      F0=Spec(i)%F1               ! å·²è€ƒè™‘äº†è·¨Tctä¿®æ­£
+      F0=Spec(i)%Fi(1)             ! å·²è€ƒè™‘äº†è·¨Tctä¿®æ­£, åªä½¿ç”¨ç¬¬1æ®µæ‹ŸåˆåŒºçš„Fiå€¼  ï¼ˆå…¶ä»–åŒºæ®µçš„å·²é€šè¿‡Ectä¿®æ­£ï¼ŒåŒ…å«åœ¨çƒ­ç„“ä¸­ï¼‰
+      E=E-(dinew(i)-di(i))*SPEC(i)%Ri*F0    ! æ›´æ–°å†…èƒ½ ï¼ˆåŠ å…¥åŒ–å­¦ååº”é‡Šæ”¾/å¸æ”¶çš„èƒ½é‡ï¼‰
     end do
   end
   
    
-! -------------ÕæÊµÆøÌå Cp= Cp (T) ----------------------------------
-! ¸ù¾İÎÂ¶È¼°×é·ÖÃÜ¶È£¬¼ÆËãÄÚÄÜ£¨²»º¬»¯Ñ§ÄÜ£©  (E=Rho*e=Rho*Cv*T for perfect gas)
-!        ÄÚÄÜµÄÄâºÏ¹«Ê½ Et=A*T+1/2*B*T**2+1/3*C*T**3+1/4*D*T**4+1/5*E*T**5  ;  
-!        ²»¿¼ÂÇÉú³ÉìÊ£¬ ¿¼ÂÇT> TctÊ±µÄĞŞÕı £¨Ect=F2-F1)    
+! -------------çœŸå®æ°”ä½“ Cp= Cp (T) ----------------------------------
+! æ ¹æ®æ¸©åº¦åŠç»„åˆ†å¯†åº¦ï¼Œè®¡ç®—å†…èƒ½ï¼ˆä¸å«åŒ–å­¦èƒ½ï¼‰  (E=Rho*e=Rho*Cv*T for perfect gas)
+!        å†…èƒ½çš„æ‹Ÿåˆå…¬å¼ Et=A*T+1/2*B*T**2+1/3*C*T**3+1/4*D*T**4+1/5*E*T**5  ;  
+!        ä¸è€ƒè™‘ç”Ÿæˆç„“ï¼Œ è€ƒè™‘T> Tctæ—¶çš„ä¿®æ­£ ï¼ˆEct=F2-F1)     
   subroutine comput_E_rgas(di,T,E)
     use CHEM
     implicit none
@@ -186,11 +209,11 @@
     A1=0.d0; B1=0.d0; C1=0.d0; D1=0.d0; E1=0.d0 ;  Ect=0.d0
 	jc=1
 	do j=1,N_Tct-1
-     if(T>Tct(j)) jc=j+1   !jc ÎÂ¶ÈTËù´¦µÄÄâºÏÇø¼ä¶ÎÊı
+     if(T>Tct(j)) jc=j+1   !jc æ¸©åº¦Tæ‰€å¤„çš„æ‹ŸåˆåŒºé—´æ®µæ•°
 	enddo
 	do k=1,N_SPEC
       R1=SPEC(k)%Ri
-      A1=A1+(SPEC(k)%Ai(jc)-1.d0)*R1*di(k)          ! ÏµÊı£¬¸÷×é·Ö¼ÓÈ¨ÇóºÍ (Ai-1) for Cv
+      A1=A1+(SPEC(k)%Ai(jc)-1.d0)*R1*di(k)         ! ç³»æ•°ï¼Œå„ç»„åˆ†åŠ æƒæ±‚å’Œ (Ai-1) for Cv
       B1=B1+SPEC(k)%Bi(jc)*R1*di(k)
       C1=C1+SPEC(k)%Ci(jc)*R1*di(k)
       D1=D1+SPEC(k)%Di(jc)*R1*di(k)
@@ -199,15 +222,15 @@
 	 end do
 
 	 if(T<=Tct_max) then
-	  E=A1*T+B1*T**2/2.d0+C1*T**3/3.d0+D1*T**4/4.d0+E1*T**5/5.d0 + Ect     ! Ect: ¿çTctĞŞÕı
+	  E=A1*T+B1*T**2/2.d0+C1*T**3/3.d0+D1*T**4/4.d0+E1*T**5/5.d0 + Ect      ! Ect: è·¨Tctä¿®æ­£
      else 
       Cv2=A1+B1*Tct_max+C1*Tct_max**2+D1*Tct_max**3+E1*Tct_max**4               ! Cv at Tct_max
 	  E=A1*Tct_max+B1*Tct_max**2/2.d0+C1*Tct_max**3/3.d0+D1*Tct_max**4/4.d0+E1*Tct_max**5/5.d0 &
- 	            + Ect +Cv2*(T-Tct_max)     ! ÄÚÄÜ £¨T> Tct_max), º¬¿çTctĞŞÕı
+ 	            + Ect +Cv2*(T-Tct_max)     ! å†…èƒ½ ï¼ˆT> Tct_max), å«è·¨Tctä¿®æ­£
 	 endif
   end
 !--------------------------------------------------------------------------  
-! ¸ù¾İÎÂ¶È¼°×é·ÖÃÜ¶È£¬¼ÆËã±ÈÈÈCp   (»ìºÏÆøÌåÆ½¾ù±ÈÈÈ£©
+! æ ¹æ®æ¸©åº¦åŠç»„åˆ†å¯†åº¦ï¼Œè®¡ç®—æ¯”çƒ­Cp   (æ··åˆæ°”ä½“å¹³å‡æ¯”çƒ­ï¼‰
   subroutine comput_Cp_rgas(d,di,T,Cp)
     use CHEM
     implicit none
@@ -222,7 +245,12 @@
 	enddo
     do k=1,N_SPEC
       R1=SPEC(k)%Ri
-      A1=A1+(SPEC(k)%Ai(jc)-1.d0)*R1*di(k)          ! ÏµÊı£¬¸÷×é·Ö¼ÓÈ¨ÇóºÍ (Ai-1) for Cv
+
+      !è¿™é‡Œæ±‚A1æ˜¯ä¸æ˜¯å†™é”™äº†======================
+!      A1=A1+(SPEC(k)%Ai(jc)-1.d0)*R1*di(k)         ! ç³»æ•°ï¼Œå„ç»„åˆ†åŠ æƒæ±‚å’Œ (Ai-1) for Cv
+        
+      !========================================
+      A1=A1+SPEC(k)%Ai(jc)*R1*di(k)   ! bug removed
       B1=B1+SPEC(k)%Bi(jc)*R1*di(k)
       C1=C1+SPEC(k)%Ci(jc)*R1*di(k)
       D1=D1+SPEC(k)%Di(jc)*R1*di(k)
@@ -230,7 +258,7 @@
 	 end do
     
     if(T <= Tct_max ) then
-	  Cp=(A1+B1*T+C1*T**2+D1*T**3+E1*T**4)/d 
+	  Cp=(A1+B1*T+C1*T**2+D1*T**3+E1*T**4)/d   !è¿™é‡Œè®¡ç®—å¾—åˆ°çš„å…¶å®æ˜¯Cvï¼Œåº”å½“æ˜¯ç¬”è¯¯å†™é”™ä¸ºCp,å¯¹åç»­è®¡ç®—å…¶å®å¹¶æ— å½±å“
     else 
 	  Cp=(A1+B1*Tct_max+C1*Tct_max**2+D1*Tct_max**3+E1*Tct_max**4)/d
     endif
@@ -238,23 +266,23 @@
   end
 
 !---------------------------------------------------------------------------------
-! ¸ù¾İÎÂ¶È£¬¼ÆËã×é·ÖìÊ £¨ÈÈìÊ£©, ²»º¬·´Ó¦ìÊ  
-!  ÈÈìÊµÄÄâºÏ¹«Ê½ ht=A*T+1/2*B*T**2+1/3*C*T**3+1/4*D*T**4+1/5*E*T**5     
+! æ ¹æ®æ¸©åº¦ï¼Œè®¡ç®—ç»„åˆ†ç„“ ï¼ˆçƒ­ç„“ï¼‰, ä¸å«ååº”ç„“  
+!  çƒ­ç„“çš„æ‹Ÿåˆå…¬å¼ ht=A*T+1/2*B*T**2+1/3*C*T**3+1/4*D*T**4+1/5*E*T**5    
 	subroutine comput_hi_rgas(k,T,hi)
     use CHEM
     implicit none
     integer k,j,jc
     real(PRE_EC):: T,hi,Cp_max 
 	TYPE (SPECIE),pointer:: Sp
-    Sp=>SPEC(k)    ! µÚ i¸ö×é·Ö
+    Sp=>SPEC(k)    ! ç¬¬ iä¸ªç»„åˆ†
 	jc=1
-	do j=1,N_Tct-1  ! ²éÕÒTËù´¦µÄÎÂ¶ÈÇø¶Î
+	do j=1,N_Tct-1  ! æŸ¥æ‰¾Tæ‰€å¤„çš„æ¸©åº¦åŒºæ®µ
      if(T>Tct(j)) jc=j+1
 	enddo
     
 	if(T<=Tct_max) then
       hi=(Sp%Ai(jc)*T+Sp%Bi(jc)*T**2/2.d0+Sp%Ci(jc)*T**3/3.d0+   &
-	      Sp%Di(jc)*T**4/4.d0+Sp%Ei(jc)*T**5/5.d0 + Sp%Ect(jc))*Sp%Ri       ! Ect ¿çTctĞŞÕı
+	      Sp%Di(jc)*T**4/4.d0+Sp%Ei(jc)*T**5/5.d0 + Sp%Ect(jc))*Sp%Ri       ! Ect è·¨Tctä¿®æ­£
     else 
 	  Cp_max=Sp%Ai(jc)+Sp%Bi(jc)*Tct_max+Sp%Ci(jc)*Tct_max**2+Sp%Di(jc)*Tct_max**3 &
 	         +Sp%Ei(jc)*Tct_max**4         ! Cp at Tct_max
@@ -264,16 +292,16 @@
     endif 
   end
   
-  ! ¼ÆËã¸÷×é·ÖµÄGibbs ×ÔÓÉìÊ (º¯ÊıÁ¬Ğø£¬ÎŞĞèÊ¹ÓÃ¿çEctĞŞÕı£© G = H-TS   ;       ¼ÆËã»¯Ñ§·´Ó¦Æ½ºâ³£ÊıÊ±Ê¹ÓÃ
+  ! è®¡ç®—å„ç»„åˆ†çš„Gibbs è‡ªç”±ç„“ (å‡½æ•°è¿ç»­ï¼Œæ— éœ€ä½¿ç”¨è·¨Ectä¿®æ­£ï¼‰ G = H-TS   ;       è®¡ç®—åŒ–å­¦ååº”å¹³è¡¡å¸¸æ•°æ—¶ä½¿ç”¨
   subroutine  comput_gibbs(k,T,gi)         ! gi=Gi/Ri
     use CHEM
     implicit none
 	TYPE (SPECIE),pointer:: Sp
     integer:: k,j,jc
     real(PRE_EC):: T, gi, Cp_max,h_max,S_max 
-     SP=>Spec(k)    ! µÚ i¸ö×é·Ö
+     SP=>Spec(k)    ! ç¬¬ iä¸ªç»„åˆ†
 	 jc=1
-	 do j=1,N_Tct-1       ! ²éÕÒTËù´¦µÄÎÂ¶ÈÇø¶Î
+	 do j=1,N_Tct-1        ! æŸ¥æ‰¾Tæ‰€å¤„çš„æ¸©åº¦åŒºæ®µ
      if(T>Tct(j)) jc=j+1
 	 enddo	 
      if(T<=Tct_max) then
@@ -282,7 +310,7 @@
       else
 	  Cp_max=Sp%Ai(jc)+Sp%Bi(jc)*Tct_max+Sp%Ci(jc)*Tct_max**2+Sp%Di(jc)*Tct_max**3+Sp%Ei(jc)*Tct_max**4         ! Cp at Tct_max	  
       h_max= Sp%Ai(jc)*Tct_max+Sp%Bi(jc)*Tct_max**2/2.d0+Sp%Ci(jc)*Tct_max**3/3.d0    &
-	         +Sp%Di(jc)*Tct_max**4/4.d0+Sp%Ei(jc)*Tct_max**5/5.d0 + Sp%Fi(jc)          ! ÎŞĞè¿çTctĞŞÕı £¨ÈÈìÊ+Éú³ÉìÊ£©
+	         +Sp%Di(jc)*Tct_max**4/4.d0+Sp%Ei(jc)*Tct_max**5/5.d0 + Sp%Fi(jc)           ! æ— éœ€è·¨Tctä¿®æ­£ ï¼ˆçƒ­ç„“+ç”Ÿæˆç„“ï¼‰
 	  S_max=Sp%Ai(jc)*log(Tct_max)+SP%Bi(jc)*Tct_max+SP%Ci(jc)*Tct_max**2/2.d0+SP%Di(jc)*Tct_max**3/3.d0 &
 	         +SP%Ei(jc)*Tct_max**4/4.d0+SP%Gi(jc)
 	  gi=h_max+Cp_max*(T-Tct_max)-T*(S_max+Cp_max*log(T/Tct_max))  ! g=h-TS
@@ -291,16 +319,16 @@
 	end       
 !--------------------------------------------------------------------------  
 
-!  ¸ù¾İÄÚÄÜE £¨²»º¬»¯Ñ§ÄÜ£©¼°×é·ÖÃÜ¶Èdi,¼ÆËã³öÎÂ¶È
-!   Newton·¨ ¼ÆËãÎÂ¶È 
+!  æ ¹æ®å†…èƒ½E ï¼ˆä¸å«åŒ–å­¦èƒ½ï¼‰åŠç»„åˆ†å¯†åº¦di,è®¡ç®—å‡ºæ¸©åº¦
+!   Newtonæ³• è®¡ç®—æ¸©åº¦ 
   
-!  di : ×é·ÖÃÜ¶È£» E ÄÚÄÜ £¨²»º¬Éú³ÉìÊ£©£» T ÎÂ¶È 
-!  ÓĞÁ¿¸Ù¼ÆËã£¬ ¹ú¼Êµ¥Î»ÖÆ£»
+!  di : ç»„åˆ†å¯†åº¦ï¼› E å†…èƒ½ ï¼ˆä¸å«ç”Ÿæˆç„“ï¼‰ï¼› T æ¸©åº¦ 
+!  æœ‰é‡çº²è®¡ç®—ï¼Œ å›½é™…å•ä½åˆ¶ï¼›
   subroutine comput_T_rgas(di,E,T)
     use CHEM
     implicit none
-    real(PRE_EC),parameter:: T_Cr=1.d-3        ! ÊÕÁ²¾«¶È
-    integer,parameter:: Kstep_lmt=30           ! µü´ú´ÎÊıÏŞÖÆ
+    real(PRE_EC),parameter:: T_Cr=1.d-3        ! æ”¶æ•›ç²¾åº¦
+    integer,parameter:: Kstep_lmt=30           ! è¿­ä»£æ¬¡æ•°é™åˆ¶
     real(PRE_EC):: E,T,p,di(N_SPEC)
     real(PRE_EC),dimension(NTct_Max):: A1,B1,C1,D1,E1,Ect
     real(PRE_EC):: R1,T1,T2,Et1,Ex,error
@@ -310,50 +338,50 @@
     Ect(1:N_Tct)=0.d0
    do j=1,N_Tct   
    do k=1,N_SPEC
-    !      ÄÚÄÜµÄÄâºÏ¹«Ê½ (Et=A*T+B*T**2+C*T**3+D*T**4+E*T**5) ¡£ ²»°üÀ¨Éú³ÉìÊ£¡
+!      å†…èƒ½çš„æ‹Ÿåˆå…¬å¼ (Et=A*T+B*T**2+C*T**3+D*T**4+E*T**5) ã€‚ ä¸åŒ…æ‹¬ç”Ÿæˆç„“ï¼
       R1=SPEC(k)%Ri
-      A1(j)=A1(j)+(SPEC(k)%Ai(j)-1.d0)*R1*di(k)          ! ÏµÊı£¬¸÷×é·Ö¼ÓÈ¨ÇóºÍ£¨µÍÎÂÇø£©
+      A1(j)=A1(j)+(SPEC(k)%Ai(j)-1.d0)*R1*di(k)         ! ç³»æ•°ï¼Œå„ç»„åˆ†åŠ æƒæ±‚å’Œï¼ˆä½æ¸©åŒºï¼‰
       B1(j)=B1(j)+SPEC(k)%Bi(j)*R1*di(k)
       C1(j)=C1(j)+SPEC(k)%Ci(j)*R1*di(k)
       D1(j)=D1(j)+SPEC(k)%Di(j)*R1*di(k)
       E1(j)=E1(j)+SPEC(k)%Ei(j)*R1*di(k)
-      Ect(j)=Ect(j)+SPEC(k)%Ect(j)*R1*di(k)           ! ¸ß-µÍÎÂìÊ²î (Á½Ì×ÄâºÏ¹«Ê½Ö®¼äµÄ²îÒì£¬ ÒÔ±ã¿çÔ½TctÊ±ÄÚÄÜÁ¬Ğø£©
+      Ect(j)=Ect(j)+SPEC(k)%Ect(j)*R1*di(k)          ! é«˜-ä½æ¸©ç„“å·® (ä¸¤å¥—æ‹Ÿåˆå…¬å¼ä¹‹é—´çš„å·®å¼‚ï¼Œ ä»¥ä¾¿è·¨è¶ŠTctæ—¶å†…èƒ½è¿ç»­ï¼‰
    enddo
    enddo
       ! newton  iteration  
   
-    T1=E/A1(1)            ! ³õÖµ
+    T1=E/A1(1)             ! åˆå€¼
   
-     ks=0 ! µü´ú´ÎÊı
+     ks=0 ! è¿­ä»£æ¬¡æ•°
 
      do while (ks <=Kstep_lmt)
 
 	 jc=1
-	 do j=1,N_Tct-1       ! ²éÕÒT1Ëù´¦µÄÎÂ¶ÈÇø¶Î
+	 do j=1,N_Tct-1        ! æŸ¥æ‰¾T1æ‰€å¤„çš„æ¸©åº¦åŒºæ®µ
      if(T1>Tct(j)) jc=j+1
 	 enddo	 
 	 
 
-    if(T1<=Tct_max) then                               ! ¸ßÎÂÇø (>1000K)
-      Et1=A1(jc)*T1+B1(jc)*T1**2/2.0+C1(jc)*T1**3/3.d0+D1(jc)*T1**4/4.d0+E1(jc)*T1**5/5.d0 + Ect(jc)              ! ÄÚÄÜ (º¬¿ç TctĞŞÕı) 
-      Ex=A1(jc)+B1(jc)*T1+C1(jc)*T1**2+D1(jc)*T1**3+E1(jc)*T1**4       ! µ¼Êı (Cv)
+    if(T1<=Tct_max) then                               ! é«˜æ¸©åŒº (>1000K)
+      Et1=A1(jc)*T1+B1(jc)*T1**2/2.0+C1(jc)*T1**3/3.d0+D1(jc)*T1**4/4.d0+E1(jc)*T1**5/5.d0 + Ect(jc)             ! å†…èƒ½ (å«è·¨ Tctä¿®æ­£) 
+      Ex=A1(jc)+B1(jc)*T1+C1(jc)*T1**2+D1(jc)*T1**3+E1(jc)*T1**4       ! å¯¼æ•° (Cv)
     else               ! T> Tct_max 
 	  Ex=A1(jc)+B1(jc)*Tct_max+C1(jc)*Tct_max**2+D1(jc)*Tct_max**3+E1(jc)*Tct_max**4               ! Cv at Tct_max  
 	  Et1=A1(jc)*Tct_max+B1(jc)*Tct_max**2/2.d0+C1(jc)*Tct_max**3/3.d0+D1(jc)*Tct_max**4/4.d0  &
-	     +E1(jc)*Tct_max**5/5.d0 + Ect(jc) +Ex*(T1-Tct_max)     ! ÄÚÄÜ (º¬¿ç TctĞŞÕı) 
+	     +E1(jc)*Tct_max**5/5.d0 + Ect(jc) +Ex*(T1-Tct_max)     ! å†…èƒ½ (å«è·¨ Tctä¿®æ­£) 
 	end if
 	
      T2=T1-(Et1-E)/Ex           !  Newton iteration
      ks=ks+1
      error=abs(T2-T1)
-	 T1=T2    ! ¸üĞÂ
+	 T1=T2    ! æ›´æ–°
     if( error < T_Cr  ) exit
     enddo 
    T=T2
    
   end
 
-! ¸ù¾İÎÂ¶È¡¢¼ÆËã³öÑ¹Á¦ £¨¸÷·ÖÑ¹Ö®ºÍ£©£» di(k) ¸÷×é·ÖµÄÃÜ¶È
+! æ ¹æ®æ¸©åº¦ã€è®¡ç®—å‡ºå‹åŠ› ï¼ˆå„åˆ†å‹ä¹‹å’Œï¼‰ï¼› di(k) å„ç»„åˆ†çš„å¯†åº¦
   subroutine comput_P(di,T,p)
     use CHEM
     implicit none
@@ -362,11 +390,11 @@
 
     p=0.d0 
     do k=1,N_SPEC
-      p=p+SPEC(k)%Ri*di(k)*T          ! Ñ¹Á¦£¬·ÖÑ¹Ö®ºÍ
+      p=p+SPEC(k)%Ri*di(k)*T          ! å‹åŠ›ï¼Œåˆ†å‹ä¹‹å’Œ
     end do
   end
 
-! ¸ù¾İÑ¹Á¦¡¢ÎÂ¶ÈÒÔ¼°ÖÊÁ¿±È·Öai(:) £¬¼ÆËãÃÜ¶È £¨2016-5-11£©
+! æ ¹æ®å‹åŠ›ã€æ¸©åº¦ä»¥åŠè´¨é‡æ¯”åˆ†ai(:) ï¼Œè®¡ç®—å¯†åº¦ ï¼ˆ2016-5-11ï¼‰
  
   subroutine comput_d(ai,T,p,d)
     use CHEM
@@ -385,8 +413,8 @@
     use CHEM
     implicit none
     real(PRE_EC):: c,p,d,Et,gamma  
-    gamma=p/Et+1.d0            ! µÈĞ§±ÈÈÈ±È
-    c=sqrt(gamma*p/d)          ! ½üËÆÉùËÙ £¨Í¨Á¿·ÖÁÑÊ¹ÓÃ£©
+    gamma=p/Et+1.d0            ! ç­‰æ•ˆæ¯”çƒ­æ¯”
+    c=sqrt(gamma*p/d)          ! è¿‘ä¼¼å£°é€Ÿ ï¼ˆé€šé‡åˆ†è£‚ä½¿ç”¨ï¼‰
  end
 
 

@@ -1,19 +1,23 @@
-!  ¼ÆËãÊäÔË²ÎÊı£º  Õ³ĞÔÏµÊı¡¢µ¼ÈÈÏµÊı¡¢À©É¢ÏµÊı
-!------ log-type fitting equation suggested by Chemkin 4.1, See Chemkin 4.1 theory manual (Chap 5.1);
+!  è®¡ç®—è¾“è¿å‚æ•°ï¼š  ç²˜æ€§ç³»æ•°ã€å¯¼çƒ­ç³»æ•°ã€æ‰©æ•£ç³»æ•°
+!  ver 1.5, 2024-12-18: å¢åŠ äº†å¤šç§å½¢å¼çš„è¾“è¿ç³»æ•°æ‹Ÿåˆå…¬å¼ï¼Œå¦‚Wilke, Gupta, Blottner 
 
+!------ log-type fitting equation suggested by Chemkin 4.1, See Chemkin 4.1 theory manual (Chap 5.1);
+! Gupta: NASA reference publication 1232, 1990
 
 module Transport
  use Precision_EC
  implicit none 
  integer,parameter:: Amu_by_Sutherland=0,   Amk_by_Pr =0, AmD_by_Sc=0 , &
-	                 Amu_by_Wilke=1,   Amk_by_Wilke =1, AmD_by_Wilke=1
+	                 Amu_by_Wilke=1,   Amk_by_Wilke =1, AmD_by_Wilke=1, &
+                   Amu_by_Gupta = 2, Amk_by_Gupta = 2, AmD_by_Gupta = 2, &
+                   Amu_by_Blottner = 3, Amk_by_Eucken = 3
 
  
  TYPE Transport_type 
- integer:: Flag_vis,Flag_cond,Flag_diff        ! Õ³ĞÔÏµÊı¡¢ÈÈµ¼ÏµÊı¡¢À©É¢ÏµÊı¼ÆËã·½Ê½£¨0£ºSurtherland, Pr, Sc ¼ÆËã£»  1£º ÄâºÏ+Wilke¹«Ê½¼ÆËã£©
- real(PRE_EC) ::  Amu0, Pr, Sc 
- real(PRE_EC),dimension(:,:),pointer:: mu_an, k_an       ! Õ³ĞÔÏµÊı£¬ ÈÈµ¼ÏµÊı  (¼ûÀíÂÛÊÖ²á 2.2½Ú£©
- real(PRE_EC),dimension(:,:,:),pointer:: D_an             ! ÊäÔËÏµÊı 
+ integer:: Flag_vis,Flag_cond,Flag_diff        ! ç²˜æ€§ç³»æ•°ã€çƒ­å¯¼ç³»æ•°ã€æ‰©æ•£ç³»æ•°è®¡ç®—æ–¹å¼ï¼ˆ0ï¼šSurtherland, Pr, Sc è®¡ç®—ï¼›  1ï¼š æ‹Ÿåˆ+Wilkeå…¬å¼è®¡ç®—ï¼‰
+ real(PRE_EC) ::  Amu0, Pr, Sc , Amk0
+ real(PRE_EC),dimension(:,:),pointer:: mu_an, k_an       ! ç²˜æ€§ç³»æ•°ï¼Œ çƒ­å¯¼ç³»æ•°  (è§ç†è®ºæ‰‹å†Œ 2.2èŠ‚ï¼‰
+ real(PRE_EC),dimension(:,:,:),pointer:: D_an            ! è¾“è¿ç³»æ•°
  end TYPE 
  TYPE (Transport_type):: Trans 
  
@@ -26,18 +30,47 @@ use CHEM, only: N_SPEC
 use Transport 
 implicit none
 
-allocate(Trans%mu_an(4,N_SPEC), Trans%k_an(4,N_SPEC), Trans%D_an(4,N_SPEC,N_SPEC) )
-if( Trans%Flag_vis .eq. Amu_by_Wilke) then
-   call read_vis_coefficients
-endif
+! allocate(Trans%mu_an(4,N_SPEC), Trans%k_an(4,N_SPEC), Trans%D_an(4,N_SPEC,N_SPEC) )
+! if( Trans%Flag_vis .eq. Amu_by_Wilke) then
+!    call read_vis_coefficients
+! endif
 
- if (Trans%Flag_cond .eq. Amk_by_Wilke) then
-   call   read_conduct_coefficients
- endif
+!  if (Trans%Flag_cond .eq. Amk_by_Wilke) then
+!    call   read_conduct_coefficients
+!  endif
 
- if (Trans%Flag_diff .eq. AmD_by_Wilke) then
-    call read_diffusion_coefficients 
- endif
+!  if (Trans%Flag_diff .eq. AmD_by_Wilke) then
+!     call read_diffusion_coefficients 
+!  endif
+
+   if (Trans%Flag_vis .eq. Amu_by_Wilke) then
+      allocate (Trans%mu_an(4, N_SPEC))
+      call read_vis_coefficients
+   elseif (Trans%Flag_vis .eq. Amu_by_Gupta) then
+      allocate (Trans%mu_an(5, N_SPEC))
+      call read_vis_coefficients
+   elseif (Trans%Flag_vis .eq. Amu_by_Blottner) then
+      allocate (Trans%mu_an(3, N_SPEC))
+      call read_vis_coefficients
+   end if
+
+   if (Trans%Flag_cond .eq. Amk_by_Wilke) then
+      allocate (Trans%k_an(4, N_SPEC))
+      call read_conduct_coefficients
+   elseif (Trans%Flag_cond .eq. Amk_by_Gupta) then
+      allocate (Trans%k_an(5, N_SPEC))
+      call read_conduct_coefficients
+   elseif (Trans%Flag_cond .eq. Amk_by_Eucken) then
+      !æ— ä»»ä½•æ‰§è¡Œ
+   end if
+
+   if (Trans%Flag_diff .eq. AmD_by_Wilke) then
+      allocate (Trans%D_an(4, N_SPEC, N_SPEC))
+      call read_diffusion_coefficients
+   elseif (Trans%Flag_diff .eq. AmD_by_Gupta) then
+      allocate (Trans%D_an(4, N_SPEC, N_SPEC))
+      call read_diffusion_coefficients
+   end if
 
 end
 
@@ -45,7 +78,7 @@ end
 
 
 !-------------------------------------------------
-! Õ³ĞÔÏµÊı µÄÄâºÏÏµÊı (in g-cm-s )
+! ç²˜æ€§ç³»æ•° çš„æ‹Ÿåˆç³»æ•° (in g-cm-s )
  subroutine read_vis_coefficients
   use CHEM 
   use Transport  
@@ -58,17 +91,37 @@ end
  read(99,*)
  read(99,*)
  read(99,*) Nm
- allocate( at(4,Nm), Name1(Nm) )
-   do m=1,Nm
-   read(99,*) Name1(m)
-   read(99,*) (at(k,m),k=1,4)
-   enddo
+!  allocate( at(4,Nm), Name1(Nm) )
+!    do m=1,Nm
+!    read(99,*) Name1(m)
+!    read(99,*) (at(k,m),k=1,4)
+!    enddo
+   if (Trans%Flag_vis .eq. Amu_by_Wilke) then
+      allocate (at(4, Nm), Name1(Nm))
+      do m = 1, Nm
+         read (99, *) Name1(m)
+         read (99, *) (at(k, m), k=1, 4)
+      end do
+   elseif (Trans%Flag_vis .eq. Amu_by_Gupta) then
+      allocate (at(5, Nm), Name1(Nm))
+      do m = 1, Nm
+         read (99, *) Name1(m)
+         read (99, *) (at(k, m), k=1, 5)
+      end do
+   elseif (Trans%Flag_vis .eq. Amu_by_Blottner) then
+      allocate (at(3, Nm), Name1(Nm))
+      do m = 1, Nm
+         read (99, *) Name1(m)
+         read (99, *) (at(k, m), k=1, 3)
+      end do
+   end if
   close(99)
 
-  do k=1,N_SPEC                  ! find spec(k)%name==Name1     Ñ°ÕÒ×é·ÖÃû³Æ=Name1(m)µÄ
+  do k=1,N_SPEC                  ! find spec(k)%name==Name1     å¯»æ‰¾ç»„åˆ†åç§°=Name1(m)çš„
      do m=1,Nm
      if(trim(Spec(k)%name) == trim (Name1(m)) ) then
-	 Trans%mu_an(1:4,k)=at(1:4,m)
+	!  Trans%mu_an(1:4,k)=at(1:4,m)
+  Trans%mu_an(:, k) = at(:, m)
      goto 120
      endif
    enddo
@@ -89,7 +142,7 @@ deallocate(at,Name1)
  end
 
 !-------------------------------------------------
-! ÈÈµ¼ÏµÊı µÄÄâºÏÏµÊı
+! çƒ­å¯¼ç³»æ•° çš„æ‹Ÿåˆç³»æ•°
  subroutine read_conduct_coefficients
   use CHEM
   use Transport 
@@ -102,17 +155,31 @@ deallocate(at,Name1)
  read(99,*)
  read(99,*)
  read(99,*) Nm
- allocate( at(4,Nm), Name1(Nm) )
-   do m=1,Nm
-   read(99,*) Name1(m)
-   read(99,*) (at(k,m),k=1,4)
-   enddo
+!  allocate( at(4,Nm), Name1(Nm) )
+!    do m=1,Nm
+!    read(99,*) Name1(m)
+!    read(99,*) (at(k,m),k=1,4)
+!    enddo
+      if (Trans%Flag_cond .eq. Amk_by_Wilke) then
+      allocate (at(4, Nm), Name1(Nm))
+      do m = 1, Nm
+         read (99, *) Name1(m)
+         read (99, *) (at(k, m), k=1, 4)
+      end do
+   elseif (Trans%Flag_cond .eq. Amk_by_Gupta) then
+      allocate (at(5, Nm), Name1(Nm))
+      do m = 1, Nm
+         read (99, *) Name1(m)
+         read (99, *) (at(k, m), k=1, 5)
+      end do
+   end if
   close(99)
 
   do k=1,N_SPEC              ! find spec(k)%name==Name
      do m=1,Nm
      if(trim(Spec(k)%name) == trim (Name1(m)) ) then
-	 Trans%k_an(1:4,k)=at(1:4,m)
+	!  Trans%k_an(1:4,k)=at(1:4,m)
+          Trans%k_an(:, k) = at(:, m)
      goto 130
      endif
    enddo
@@ -133,7 +200,7 @@ deallocate(at,Name1)
 
 
 !------------------------------------------------------------
-! À©É¢ÏµÊıµÄÄâºÏÏµÊı
+! æ‰©æ•£ç³»æ•°çš„æ‹Ÿåˆç³»æ•°
 subroutine read_diffusion_coefficients 
 use CHEM
 use Transport 
@@ -184,69 +251,127 @@ deallocate(dtp,Name1,Name2)
 end 
 
 
-! ¼ÆËãÕ³ĞÔÏµÊı£¬ ÈÈ´«µ¼ÏµÊı£¬ À©É¢ÏµÊı
+! è®¡ç®—ç²˜æ€§ç³»æ•°ï¼Œ çƒ­ä¼ å¯¼ç³»æ•°ï¼Œ æ‰©æ•£ç³»æ•°
 !----------------------------------------------------
 
-! ¼ÆËãÕ³ĞÔÏµÊı£¨»ìºÏÎïµÄÍ³Ò»Õ³ĞÔÏµÊıAmu£© 
+! è®¡ç®—ç²˜æ€§ç³»æ•°ï¼ˆæ··åˆç‰©çš„ç»Ÿä¸€ç²˜æ€§ç³»æ•°Amuï¼‰
 ! Sutherland eq. or Wilke eq.
- subroutine comput_vis_coeff(Amu,T,Xi)        ! Xi ¸÷×é·ÖµÄÄ¦¶û±È·Ö
+ subroutine comput_vis_coeff(Amu,T,Xi)        ! Xi å„ç»„åˆ†çš„æ‘©å°”æ¯”åˆ†
   use CHEM
   use Transport  
   implicit none 
   real(PRE_EC):: Amu, T,Pk0,Pkj,mu
   real(PRE_EC):: mui(N_SPEC), Xi(N_SPEC) 
-  real(PRE_EC),parameter:: Sutherland_TA=288.15d0, Sutherland_TC=110.4d0   ! Sutherland ¹«Ê½ÖĞµÄ³£Êı
+  real(PRE_EC),parameter:: Sutherland_TA=288.15d0, Sutherland_TC=110.4d0   ! Sutherland å…¬å¼ä¸­çš„å¸¸æ•°
   integer:: m,j,k
   
-  if (Trans%Flag_vis .eq. Amu_by_Sutherland) then          ! Sutherland eq.
-    Amu=Trans%Amu0* sqrt( (T/Sutherland_TA)**3 ) * (Sutherland_TA+Sutherland_TC) /(Sutherland_TC+T)
-  else 
-   do  m=1,N_SPEC            ! ¸÷×é·ÖÕ³ĞÔÏµÊı (log fitting by CHEMKIN)
-    mui(m)=exp(Trans%mu_an(1,m)+Trans%mu_an(2,m)*log(T)+Trans%mu_an(3,m)*log(T)**2    &        ! ×¢Òâµ¥Î»ÖÆ
-              +Trans%mu_an(4,m)*log(T)**3) *0.1d0                  ! 0.1  transform for g-cm-s unit to SI unit
-   enddo
+   if (Trans%Flag_vis .eq. Amu_by_Sutherland) then          ! Sutherland eq.
+      Amu=Trans%Amu0* sqrt( (T/Sutherland_TA)**3 ) * (Sutherland_TA+Sutherland_TC) /(Sutherland_TC+T)
+   else 
+      if(Trans%Flag_vis .eq. Amu_by_Wilke) then
+         do  m=1,N_SPEC            ! å„ç»„åˆ†ç²˜æ€§ç³»æ•° (log fitting by CHEMKIN)
+             mui(m)=exp(Trans%mu_an(1,m)+Trans%mu_an(2,m)*log(T)+Trans%mu_an(3,m)*log(T)**2    &        ! æ³¨æ„å•ä½åˆ¶
+                    +Trans%mu_an(4,m)*log(T)**3) *0.1d0                  ! 0.1  transform for g-cm-s unit to SI unit
+         enddo
+      elseif (Trans%Flag_vis .eq. Amu_by_Gupta) then
+         if (T < 1000.) then
+            Amu = Trans%Amu0*sqrt((T/Sutherland_TA)**3)*(Sutherland_TA + Sutherland_TC)/(Sutherland_TC + T)
+            goto 150
+         else
+            do m = 1, N_SPEC            ! å„ç»„åˆ†ç²˜æ€§ç³»æ•° (log fitting by Gupta)
+              !  mui(m) = exp(Trans%mu_an(1, m)*log(T)**4 + Trans%mu_an(2, m)*log(T)**3 + Trans%mu_an(3, m)*log(T)**2 &        ! ×¢ï¿½âµ¥Î»ï¿½ï¿½
+              !               + Trans%mu_an(4, m)*log(T) + Trans%mu_an(5, m))*0.1d0                  ! 0.1  transform for g-cm-s unit to SI unit
+              mui(m) = 0.1d0*exp(Trans%mu_an(5, m))*T**(Trans%mu_an(1, m)*log(T)**3 + Trans%mu_an(2, m)*log(T)**2  &
+                              + Trans%mu_an(3, m)*log(T) + Trans%mu_an(4, m))
+            end do
+         end if
+      elseif (Trans%Flag_vis .eq. Amu_by_Blottner) then
+         
+         do m = 1, N_SPEC            ! å„ç»„åˆ†ç²˜æ€§ç³»æ•° (log fitting by Blottner)
+                  ! 0.1  transform for g-cm-s unit to SI unit
+            mui(m) = 0.1d0*exp((Trans%mu_an(1, m)*log(T) + Trans%mu_an(2, m))*log(T) + Trans%mu_an(3, m))
+         end do
+        
+      end if
  
-! Wilke Equation  (see: ÀíÂÛÊÖ²á 2.2½Ú)
-   mu=0.d0
-   do k=1,N_Spec
-   Pk0=0.d0
-   do j=1,N_Spec
-   Pkj= (1.d0+ sqrt(mui(k)/mui(j)* sqrt(Spec(j)%Mi/Spec(k)%Mi))  )**2/sqrt(8.d0* ( 1.d0+ Spec(k)%Mi/Spec(j)%Mi )  )
-   Pk0=Pk0+Xi(j)*Pkj
-   enddo
-    mu=mu+Xi(k)*mui(k)/Pk0
-   enddo
-   Amu=mu
-  endif    
-  end 
+    ! Wilke Equation  (see: ç†è®ºæ‰‹å†Œ 2.2èŠ‚)
+      mu=0.d0
+      do k=1,N_Spec
+         Pk0=0.d0
+         do j=1,N_Spec
+            Pkj= (1.d0+ sqrt(mui(k)/mui(j)* sqrt(Spec(j)%Mi/Spec(k)%Mi))  )**2/sqrt(8.d0* ( 1.d0+ Spec(k)%Mi/Spec(j)%Mi )  )
+            Pk0=Pk0+Xi(j)*Pkj
+         enddo
+         mu=mu+Xi(k)*mui(k)/Pk0
+      enddo
+      Amu=mu
+   endif    
+   150 continue
+end subroutine comput_vis_coeff
    
    
-! ¼ÆËãÈÈ´«µ¼ÏµÊık   
-  subroutine comput_thermal_conductivity(Amk,Amu,Cp,T,Xi)    ! Amk µ¼ÈÈÏµÊı£¬ Amu Õ³ĞÔÏµÊı£¬Cp ¶¨Ñ¹±ÈÈÈ£¬TÎÂ¶È£¬ Xi ×é·ÖÄ¦¶û±È·Ö
-  use CHEM,only: N_SPEC
+! è®¡ç®—çƒ­ä¼ å¯¼ç³»æ•°k     
+  subroutine comput_thermal_conductivity(Amk,Amu,Cp,T,Xi)    ! Amk å¯¼çƒ­ç³»æ•°ï¼Œ Amu ç²˜æ€§ç³»æ•°ï¼ŒCp å®šå‹æ¯”çƒ­ï¼ŒTæ¸©åº¦ï¼Œ Xi ç»„åˆ†æ‘©å°”æ¯”åˆ†
+  use CHEM, only: SPEC,N_SPEC
   use Transport  
   implicit none 
-  real(PRE_EC):: Amk,Amu, Cp,T,Amk1,Amk2
+  real(PRE_EC):: Amk,Amu, Cp,T,Amk1,Amk2,Pk0,Pkj
+  real(PRE_EC), parameter:: Sutherland_TA = 273.16d0, Sutherland_TC = 194.4d0   ! Sutherland
+  
   real(PRE_EC):: ki(N_SPEC), Xi(N_SPEC) 
-  integer:: m
+  real(PRE_EC):: Cv(N_SPEC)
+  real(PRE_EC):: Amu_Blottner(N_SPEC)
+  integer:: m, k, j
   
   if (Trans%Flag_cond .eq. Amk_by_Pr) then      ! by using Prandtl number 
-   Amk=Amu*Cp/Trans%Pr
-  else 
-   do m=1,N_SPEC  
-   ki(m)=exp(Trans%k_an(1,m)+Trans%k_an(2,m)*log(T)+Trans%k_an(3,m)*log(T)**2    & 
-             +Trans%k_an(4,m)*log(T)**3) *1.d-5                   ! 1.d-5  transform for g-cm-s unit to SI unit  
-   enddo  
-   Amk1=0.d0
-   Amk2=0.d0
-  do m=1,N_Spec
-   Amk1=Amk1+Xi(m)*ki(m)
-   Amk2=Amk2+Xi(m)/ki(m)
-  enddo
-  Amk=0.5d0*(Amk1+1.d0/Amk2)
+      Amk=Amu*Cp/Trans%Pr
+  elseif (Trans%Flag_cond .eq. Amk_by_Eucken) then
+      call comput_Cv_EuckenFormula(Cv)
+      do m = 1, N_SPEC            ! å„ç»„åˆ†ç²˜æ€§ç³»æ•° (log fitting by Blottner)
+         Amu_Blottner(m) = 0.1d0*exp((Trans%mu_an(1, m)*log(T) + Trans%mu_an(2, m))*log(T) + Trans%mu_an(3, m))
+         ki(m) = Amu_Blottner(m) * Cv(m)
+      end do
+      ! Wilke Equation 
+      Amk1=0.d0
+      do k=1,N_Spec
+         Pk0=0.d0
+         do j=1,N_Spec
+            Pkj= (1.d0+ sqrt(ki(k)/ki(j)* sqrt(Spec(j)%Mi/Spec(k)%Mi))  )**2/sqrt(8.d0* ( 1.d0+ Spec(k)%Mi/Spec(j)%Mi )  )
+            Pk0=Pk0+Xi(j)*Pkj
+         enddo
+         Amk1=Amk1+Xi(k)*ki(k)/Pk0
+      enddo
+      Amk=Amk1
+  else
+      if (Trans%Flag_cond .eq. Amk_by_Wilke) then
+      do m=1,N_SPEC  
+          ki(m)=exp(Trans%k_an(1,m)+Trans%k_an(2,m)*log(T)+Trans%k_an(3,m)*log(T)**2    & 
+                +Trans%k_an(4,m)*log(T)**3) *1.d-5                   ! 1.d-5  transform for g-cm-s unit to SI unit  
+      enddo  
+      elseif (Trans%Flag_cond .eq. Amk_by_Gupta) then
+          if (T < 1000.) then
+              Amk = Trans%Amk0*sqrt((T/Sutherland_TA)**3)*(Sutherland_TA + Sutherland_TC)/(Sutherland_TC + T)
+              goto 160
+          else
+              do m = 1, N_SPEC
+                  ! ki(m) = exp(Trans%k_an(1, m)*log(T)**4 + Trans%k_an(2, m)*log(T)**3 + Trans%k_an(3, m)*log(T)**2 &
+                  !          + Trans%k_an(4, m)*log(T) + Trans%k_an(5, m))*418.4                  ! 418.4  transform for cal/(cm*s*K) unit to SI unit
+                  ki(m) = 418.4 * exp(Trans%k_an(5, m))*T**(Trans%k_an(1, m)*log(T)**3 + Trans%k_an(2, m)*log(T)**2  &
+                              + Trans%k_an(3, m)*log(T) + Trans%k_an(4, m))
+              end do
+          end if
+      end if
+      Amk1=0.d0
+      Amk2=0.d0
+      do m=1,N_Spec
+        Amk1=Amk1+Xi(m)*ki(m)
+        Amk2=Amk2+Xi(m)/ki(m)
+      enddo
+      Amk=0.5d0*(Amk1+1.d0/Amk2)
   
   endif 
-  end
+  160 continue
+  end subroutine comput_thermal_conductivity
 
 !-----------------------------------------------------------
   subroutine comput_diffusion_coeff(AmDi,Amu,T,d,p,Xi)
@@ -259,35 +384,46 @@ end
   real(PRE_EC):: epsl=1.d-20
   
   if (Trans%Flag_diff .eq. AmD_by_Sc) then      ! by using Prandtl number 
-   d0=0.d0 
-   do m=1,N_SPEC 
-    d0=d0+Xi(m)*Spec(m)%Mi 
-   enddo 
-   do m=1,N_SPEC 
-   AmDi(m)=Amu*(1.d0-Xi(m)*Spec(m)%Mi/d0)/((1.d0-Xi(m))*Trans%Sc*d +epsl)
-   enddo 
+      d0=0.d0 
+      do m=1,N_SPEC 
+          d0=d0+Xi(m)*Spec(m)%Mi 
+      enddo 
+      do m=1,N_SPEC 
+          AmDi(m)=Amu*(1.d0-Xi(m)*Spec(m)%Mi/d0)/((1.d0-Xi(m))*Trans%Sc*d +epsl)
+      enddo 
   else 
-    do  j=1,N_SPEC
-	do  k=1,j
-     D2(k,j)=exp(Trans%D_an(1,k,j)+Trans%D_an(2,k,j)*log(T) & 
-	           +Trans%D_an(3,k,j)*log(T)**2+Trans%D_an(4,k,j)*log(T)**3) *1.d-4        ! 1.d-4:  g-cm-s to SI
-    enddo
-    enddo
-	 do j=1,N_SPEC
-	 do k=j+1,N_SPEC
-	   D2(k,j)=D2(j,k)
-	 enddo
-	 enddo
+      if (Trans%Flag_diff .eq. AmD_by_Wilke) then
+        do  j=1,N_SPEC
+	        do  k=1,j
+              D2(k,j)=exp(Trans%D_an(1,k,j)+Trans%D_an(2,k,j)*log(T) & 
+	                   +Trans%D_an(3,k,j)*log(T)**2+Trans%D_an(4,k,j)*log(T)**3) *1.d-4        ! 1.d-4:  g-cm-s to SI
+          enddo
+        enddo
+      elseif (Trans%Flag_diff .eq. AmD_by_Gupta) then
+         do j = 1, N_SPEC
+            do k = 1, j
+              !  D2(k, j) = exp(Trans%D_an(1, k, j)*log(T)**3 + Trans%D_an(2, k, j)*log(T)**2 &
+              !                 + Trans%D_an(3, k, j)*log(T) + Trans%D_an(4, k, j))*1.d-4        ! 1.d-4:  g-cm-s to SI
+              D2(k, j) = 1.d-4 * exp(Trans%D_an(4, k, j)) * T**(Trans%D_an(1, k, j)*log(T)**2 &
+                                +Trans%D_an(2, k, j)*log(T) + Trans%D_an(3, k, j))
+            end do
+         end do
+      end if
+	    do j=1,N_SPEC
+	        do k=j+1,N_SPEC
+	          D2(k,j)=D2(j,k)
+	        enddo
+	    enddo
 
-   do k=1,N_SPEC
-   ds=0.d0
-   do j=1,N_SPEC
-   if(j .ne. k) ds=ds+Xi(j)/D2(k,j)
-   enddo
-    AmDi(k)=(1.d0-Xi(k))/(ds+1.d-20) *atm/p                         ! Di ~ 1/p
-   enddo
+      do k=1,N_SPEC
+        ds=0.d0
+        do j=1,N_SPEC
+          if(j .ne. k) ds=ds+Xi(j)/D2(k,j)
+        enddo
+        AmDi(k)=(1.d0-Xi(k))/(ds+1.d-20) *atm/p                         ! Di ~ 1/p
+      enddo
   endif 
-  end 
+  end subroutine comput_diffusion_coeff
 
 !---------------------------------------------------------------------------
 

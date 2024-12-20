@@ -23,10 +23,8 @@
    real(kind=OCFD_REAL_KIND):: px,py,pz,dp0,dp_av,dp_av1,epsl,R0
 !------------------------------------------------------------------------
    Shock_sensor=nint(Scheme%Hybrid_para(1))
-   if(Shock_sensor==1) then 
-    allocate(p(1-LAP:nx+LAP,1-LAP:ny+LAP,1-LAP:nz+LAP)) 
-   else    
-    allocate(p(1-LAP:nx+LAP,1-LAP:ny+LAP,1-LAP:nz+LAP),pk(nx,ny,nz),pi(nx,ny,nz),ps(nx,ny,nz))  
+   if(Shock_sensor .ne. 1) then 
+     allocate(pk(nx,ny,nz),pi(nx,ny,nz),ps(nx,ny,nz))  
    endif    
   
   
@@ -130,10 +128,9 @@
 	 
     endif 	 
 	
-	if(Shock_sensor==1) then
-      deallocate(p) 
-	else 
-	  deallocate(p,pk,pi,ps) 
+
+	if( Shock_sensor .ne. 1 ) then
+	  deallocate(pk,pi,ps) 
     endif 
 	
 !   if(my_id .eq. 0)   open(99,file="Rhybrid.dat",form="unformatted")

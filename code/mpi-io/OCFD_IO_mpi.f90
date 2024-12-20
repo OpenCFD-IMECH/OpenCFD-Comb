@@ -102,7 +102,7 @@
 !--------------------------------------------------
  
 !----Write points from 3d array------------------------
-
+! MPI_Bsend ==> MPI_Send, modified 2024-8-24
    subroutine write_points(file_no,U,mpoints,ia,ja,ka)
    use flow_para
    implicit none
@@ -117,15 +117,29 @@
        call get_i_node(ia(m),node_i,i_local)
        call get_j_node(ja(m),node_j,j_local)
        call get_k_node(ka(m),node_k,k_local)
+	   
+!      if(npx.eq.node_i .and. npy .eq. node_j .and. npz .eq. node_k) then       
+!       call MPI_Bsend(U(i_local,j_local,k_local),1,OCFD_DATA_TYPE, 0,0,MPI_COMM_WORLD,ierr)
+!      endif
+!      if(my_id.eq.0) then
+!       nrecv=node_k*npx0*npy0+node_j*npx0+node_i                  
+!       call MPI_Recv(U1(m),1,OCFD_DATA_TYPE, nrecv,0,MPI_COMM_WORLD,status,ierr)
+!      endif
+
+!   modified, 2024-8-24,  change MPI_Bsend to MPI_Send 
       if(npx.eq.node_i .and. npy .eq. node_j .and. npz .eq. node_k) then       
-       call MPI_Bsend(U(i_local,j_local,k_local),1,OCFD_DATA_TYPE, 0,0,MPI_COMM_WORLD,ierr)
-      endif
-      
+       if(my_id .ne. 0) then 
+        call MPI_send(U(i_local,j_local,k_local),1,OCFD_DATA_TYPE, 0,0,MPI_COMM_WORLD,ierr)
+       else 
+	     U1(m)=U(i_local,j_local,k_local)
+       endif
+      endif 
       if(my_id.eq.0) then
        nrecv=node_k*npx0*npy0+node_j*npx0+node_i                  
-       call MPI_Recv(U1(m),1,OCFD_DATA_TYPE, nrecv,0,MPI_COMM_WORLD,status,ierr)
-      endif
-      enddo
+       if(nrecv .ne. 0)    call MPI_Recv(U1(m),1,OCFD_DATA_TYPE, nrecv,0,MPI_COMM_WORLD,status,ierr)
+ 	  endif
+    
+	enddo
       if(my_id .eq. 0) then
         write (file_no) U1
       endif
